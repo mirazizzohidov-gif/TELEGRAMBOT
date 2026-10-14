@@ -62,7 +62,7 @@ Admin panelda saqlangan sozlama (telefon, kanallar, havola, profil) env qiymatid
    curl https://<loyiha>.vercel.app/api/setup-webhook -H "x-secret: ..."
    ```
 
-   Shundan keyin bot Telegram'dagi xabarlarga javob beradi. `WEBHOOK_SECRET` yoki domen o'zgarsa, qayta chaqiring.
+   Shundan keyin bot Telegram'dagi xabarlarga javob beradi. Shu chaqiruv har bir admin uchun bot buyruqlarini ham o'rnatadi (`/admin`, `/random`, `/report`, `/now`) va menyu tugmasini "Commands" qiladi — oddiy foydalanuvchilarga bu buyruqlar ko'rinmaydi. `WEBHOOK_SECRET`, domen yoki `ADMIN_IDS` o'zgarsa, qayta chaqiring. (Admin avval botga kamida bir marta yozgan bo'lishi kerak, aks holda javobdagi `commands` ro'yxatida xato ko'rinadi.)
 5. **Admin panel.** Botga `/start` yoki `/admin` yozing.
 6. **Story (ixtiyoriy).** Telegram → Settings → Telegram Business → Chatbots → botni qo'shing va story huquqini bering. Bot ulanishni o'zi saqlaydi va adminlarga xabar beradi. Admin panelda "📱 Profil" orqali profilni tanlang va kerakli story tugmalarini yoqing. Bir nechta biznes profil qo'llab-quvvatlanadi.
 7. **Har 15 daqiqalik cron (`/api/cron/tick`).**
@@ -81,7 +81,20 @@ Admin panelda saqlangan sozlama (telefon, kanallar, havola, profil) env qiymatid
 
 ## Admin panel
 
-Faqat `ADMIN_IDS` dagi foydalanuvchilar uchun. `/start` yoki `/admin`:
+Faqat `ADMIN_IDS` dagi foydalanuvchilar uchun. Admin bir marta `/start` yoki `/admin` yozgandan keyin pastda **doimiy tugmalar** turadi:
+
+| Tugma | Buyruq | Amal |
+|---|---|---|
+| ⚙️ Admin panel | `/admin` | Admin panel menyusi |
+| 🎲 Random joylash | `/random` | "Nechta mahsulot?" deb so'raydi |
+| 📊 Hisobot | `/report` | Bugungi hisobot |
+| 🚀 Hozir joylash | `/now` | 15 daqiqalik tekshiruvni darhol ishga tushiradi |
+
+Har safar `/admin` yozish shart emas. Bot javoblarida bu tugmalar yo'qolmaydi. Biror narsa so'ralgan paytda (masalan telefon) boshqa tugmani bossangiz, so'rov bekor bo'ladi.
+
+**Oddiy foydalanuvchilar** (admin emas) botga nima yozsa ham qisqa javob oladi: "Buyurtma uchun: <telefon>" va "🛒 Buyurtma berish" tugmasi. Admin tugmalari va buyruqlari ularga ko'rinmaydi.
+
+Admin panel menyusi (`⚙️ Admin panel`):
 
 | Tugma | Vazifasi |
 |---|---|

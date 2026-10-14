@@ -1,6 +1,25 @@
+import { ADMIN_COMMANDS } from '../lib/admin.js';
 import { checkSecret } from '../lib/request.js';
 import { tg } from '../lib/telegram.js';
+import { adminIds } from '../lib/util.js';
 import { webhookSecretToken } from '../lib/webhook-secret.js';
+
+// Admin-only command list and the "commands" menu button in each admin's chat.
+// An admin who has never opened the bot gets "chat not found" — reported, not fatal.
+async function setupAdminCommands() {
+  const results = [];
+  for (const id of adminIds()) {
+    const scope = { type: 'chat', chat_id: id };
+    try {
+      await tg('setMyCommands', { commands: ADMIN_COMMANDS, scope });
+      await tg('setChatMenuButton', { chat_id: id, menu_button: { type: 'commands' } });
+      results.push({ admin: id, ok: true });
+    } catch (err) {
+      results.push({ admin: id, ok: false, error: err.message });
+    }
+  }
+  return results;
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -18,8 +37,9 @@ export default async function handler(req, res) {
       secret_token: webhookSecretToken(),
       allowed_updates: ['message', 'callback_query', 'business_connection'],
     });
+    const commands = await setupAdminCommands();
     const info = await tg('getWebhookInfo');
-    return res.status(200).json({ ok: true, url, info });
+    return res.status(200).json({ ok: true, url, info, commands });
   } catch (err) {
     return res.status(502).json({ ok: false, error: 'Telegram error', details: err.data || String(err) });
   }
