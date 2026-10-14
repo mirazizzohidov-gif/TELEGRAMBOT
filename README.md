@@ -25,6 +25,7 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `BITO_FILE_URL`          | yo'q            | Standart: `https://api.bito.uz/upload-api/public` (mahsulot `image` yo'li oldiga qo'shiladi) |
 | `PROTECT_CONTENT`        | yo'q            | Standart: yoqilgan (kanal postini forward/saqlab bo'lmaydi). O'chirish uchun `false` |
 | `BUSINESS_CONNECTION_ID` | `/api/story` uchun | Business ulanish ID si (pastda qanday topish ko'rsatilgan) |
+| `CONTACT_PHONE`          | yo'q            | Caption'dagi telefon raqami. Standart: `+998982000307` |
 
 > Token, kalit va secret qiymatlarini hech qachon kodga yoki repo'ga yozmang — faqat Vercel env o'zgaruvchilarida saqlang.
 
@@ -34,7 +35,7 @@ Botni kanalga administrator sifatida qo'shing (xabar yuborish huquqi bilan).
 
 Body uchta rejimdan birida yuboriladi:
 
-**1. Eng yangi mahsulot** — BITO'dagi eng oxirgi qo'shilgan mahsulot (`created_at` bo'yicha):
+**1. Eng yangi mahsulot** — BITO'dagi eng oxirgi qo'shilgan **rasmli** mahsulot (`created_at` bo'yicha). Rasmsiz mahsulotlar (`image` ham, `images` ham bo'sh) o'tkazib yuboriladi; rasmli mahsulot topilmasa 404 qaytadi:
 
 ```bash
 curl -X POST https://<loyiha>.vercel.app/api/send \
@@ -59,6 +60,17 @@ curl -X POST https://<loyiha>.vercel.app/api/send \
 ```
 
 Narx `BITO_PRICE_ID` narx ro'yxatidan olinadi va `22 000` ko'rinishida yoziladi.
+
+Kanal posti va story uchun caption bir xil:
+
+```
+🛍 Mahsulot nomi: 1637-03 copy
+💰 Narxi: 22 000 so'm
+
+📞 Buyurtma uchun murojaat qiling: +998982000307
+```
+
+Telefon raqami `CONTACT_PHONE` env'dan olinadi.
 
 ## Story joylash
 
@@ -90,7 +102,7 @@ Rasm avtomatik 1080×1920 ga moslashtiriladi (oq fon, JPEG). Story uchun Telegra
 | `200` | Muvaffaqiyatli: `send` → `message_id`, `story` → `story_id`, `business-id` → `connections` |
 | `400` | Maydonlar yetishmaydi, body JSON emas yoki `active_period` noto'g'ri |
 | `401` | `x-secret` noto'g'ri yoki yo'q |
-| `404` | BITO'da mahsulot yoki uning narxi topilmadi |
+| `404` | BITO'da mahsulot (yoki `latest` rejimida rasmli mahsulot) yoki uning narxi topilmadi |
 | `405` | Noto'g'ri HTTP metod |
 | `500` | Env o'zgaruvchilari yetishmaydi yoki ichki xato |
 | `502` | Telegram yoki BITO xato qaytardi, yoki rasm yuklab/qayta ishlab bo'lmadi (`details` maydonida) |
