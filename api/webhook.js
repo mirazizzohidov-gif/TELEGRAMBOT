@@ -1,8 +1,11 @@
 import { handleUpdate } from '../lib/admin.js';
+import { runInBackground } from '../lib/background.js';
 import { readBody } from '../lib/request.js';
 import * as db from '../lib/store.js';
 import { webhookSecretToken } from '../lib/webhook-secret.js';
 
+// Answers Telegram with 200 right away and does the work in the background (waitUntil). A slow
+// answer would make Telegram re-send the update and the action would run twice.
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Use POST' });
@@ -14,13 +17,17 @@ export default async function handler(req, res) {
   const update = readBody(req, res);
   if (!update) return;
   try {
-    // Telegram re-sends an update if we answer slowly; handle each update_id once.
+    // Each update_id is handled once (kept 10 minutes).
     if (update.update_id === undefined || (await db.firstUpdate(update.update_id))) {
-      await handleUpdate(update);
+      const started = Date.now();
+      runInBackground(
+        handleUpdate(update).then(() => console.log(`update ${update.update_id} handled in ${Date.now() - started} ms`)),
+      );
+    } else {
+      console.log(`update ${update.update_id} is a duplicate, skipped`);
     }
   } catch (err) {
     console.error('webhook', err);
   }
-  // Always 200 so Telegram does not retry endlessly.
   return res.status(200).json({ ok: true });
 }

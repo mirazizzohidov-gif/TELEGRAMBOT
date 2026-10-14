@@ -32,6 +32,7 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `WEBHOOK_SECRET` | yo'q | Webhook maxfiy kaliti. Bo'lmasa `SECRET` ishlatiladi. Faqat `A-Z a-z 0-9 _ -` bo'lmasa, uning SHA-256 xeshi ishlatiladi |
 | `BITO_API_URL` | yo'q | Standart: `https://api.bito.uz/integration-api/integration/api/v2` |
 | `BITO_FILE_URL` | yo'q | Standart: `https://api.bito.uz/upload-api/public` |
+| `BITO_CACHE_TTL` | yo'q | BITO mahsulot/narx keshi (soniya). Standart `600` (10 daqiqa), `0` — keshsiz |
 | `CHANNEL_ID` | yo'q | Boshlang'ich kanal (`@kanal` yoki `-100...`). Admin paneldan kanal qo'shilsa, bazadagisi ishlatiladi. `/api/send` uchun majburiy |
 | `CONTACT_PHONE` | yo'q | Boshlang'ich telefon. Standart `+998982000307`. Admin panelda o'zgartiriladi |
 | `ORDER_URL` | yo'q | "🛒 Buyurtma berish" tugmasi havolasi. Standart `https://t.me/Mixpodarok0307`. Admin panelda o'zgartiriladi |
@@ -248,6 +249,16 @@ curl -X POST https://<loyiha>.vercel.app/api/send \
 | `405` | Noto'g'ri HTTP metod |
 | `500` | Env o'zgaruvchilari yetishmaydi yoki ichki xato |
 | `502` | Telegram yoki BITO xato qaytardi, yoki rasmni qayta ishlab bo'lmadi |
+
+## Tezlik va javob
+
+- **Webhook darhol javob beradi.** Telegram'ga HTTP 200 darhol qaytariladi, ish esa `waitUntil` (`@vercel/functions`) orqali fonda davom etadi — sekin javob Telegram'ni update'ni qayta yuborishga majbur qilmaydi. Har bir `update_id` Redis'da 10 daqiqa saqlanadi va takrorlari o'tkazib yuboriladi.
+- **Tugma bosilganda** birinchi bo'lib `answerCallbackQuery` ("⏳ Bajarilmoqda...") yuboriladi. Uzoq amallarda bot darhol xabar yozadi ("🔎 SKU 670899 qidirilmoqda...", "🚀 Yangi mahsulotlar tekshirilmoqda...", "⏳ 3 ta mahsulot joylanmoqda...") va keyin o'sha xabarni natija bilan tahrirlaydi.
+- **"🚀 Hozir joylash" har doim natija yozadi:** "Yangi mahsulot topilmadi (oxirgi tekshiruv: HH:MM)" yoki "N ta topildi: X ta kanalga, Y ta story; o'tkazildi: rasmsiz A, narxsiz B, qoldiq 0 C, takror D", joylangan SKU'lar ro'yxati, xato bo'lsa xato matni.
+- **BITO:** har bir so'rov vaqti logga yoziladi (`BITO /product/get-paging {...} -> 200 in 340 ms` — Vercel → Logs), 10 soniyalik timeout. Mahsulot (SKU bo'yicha), narx, katalog sahifalari va mahsulotlar soni Redis'da 10 daqiqa keshlanadi (narxi yo'q mahsulot keshlanmaydi — narx keyin kiritilsa darhol ko'rinadi). Bir nechta SKU va narxlar parallel so'raladi. Random katalogni to'liq o'qimaydi — 1–2 ta tasodifiy sahifa oladi.
+- **Telegram:** 10 soniyalik timeout; rasm yuboradigan metodlar (sendPhoto, albom, story) uchun 30 soniya (erta uzish dublikat postga olib kelishi mumkin).
+- **Redis** ulanishi modul darajasida bir marta ochiladi va keyingi so'rovlarda qayta ishlatiladi.
+- **sharp** (rasmni story uchun 1080×1920 ga moslash) faqat story yuborilayotganda yuklanadi.
 
 ## Eslatmalar
 
