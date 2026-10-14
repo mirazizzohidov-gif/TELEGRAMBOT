@@ -35,6 +35,8 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `BITO_CACHE_TTL` | yo'q | BITO mahsulot/narx/chegirma keshi (soniya). Standart `600` (10 daqiqa), `0` — keshsiz |
 | `BITO_TIMEOUT_MS` | yo'q | BITO so'rovi uchun kutish vaqti (ms). Standart `60000`. Timeout yoki 5xx bo'lsa 2 soniyadan keyin 1 marta qayta uriniladi |
 | `BITO_DISCOUNT_PATH` | yo'q | Chegirmalar endpointi. Standart `/discount/get-all` (ishlamasa `/discount/get-paging`) |
+| `DISCOUNT_SCAN_LIMIT` | yo'q | Kategoriya / barcha kategoriyalar chegirmasida e'lon qilinadigan mahsulotlar soni (BITO'ga kam so'rov). Standart `30` |
+| `BITO_PRODUCT_BY_ID_PATH` | yo'q | Mahsulotni ID bo'yicha olish endpointi. Standart `/product/get-by-id` |
 | `DISCOUNT_CASH_MODE` | yo'q | `apply_type: cash` chegirma ma'nosi: `subtract` (standart) — narx − value; `final` — value yangi narxning o'zi |
 | `CHANNEL_ID` | yo'q | Boshlang'ich kanal (`@kanal` yoki `-100...`). Admin paneldan kanal qo'shilsa, bazadagisi ishlatiladi. `/api/send` uchun majburiy |
 | `CONTACT_PHONE` | yo'q | Boshlang'ich telefon. Standart `+998982000307`. Admin panelda o'zgartiriladi |
@@ -229,6 +231,21 @@ Chegirmali mahsulot posti:
 ```
 
 Chegirmalarni olib bo'lmasa, bot asl narx bilan ishlashda davom etadi va xatoni logga yozadi.
+
+### Faol chegirmalar avtomatik e'lon qilinadi
+
+Har tick'da (har 15 daqiqa) bot BITO'dagi faol chegirmalarni ko'radi va ularga tegishli mahsulotlarni e'lon qiladi — **bot avval hech qachon yubormagan mahsulotlarni ham**:
+
+- `item_added_ids` dagi mahsulotlar ID bo'yicha olinadi (keshlanadi);
+- kategoriya yoki barcha kategoriyalar chegirmasida faqat birinchi `DISCOUNT_SCAN_LIMIT` (standart 30) ta mahsulot;
+- rasm, narx va qoldiq (> 0) bo'lishi kerak; o'tmaganlari belgilanmaydi va keyingi tick'da qayta tekshiriladi (masalan qoldiq kelganda chiqadi);
+- "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (chegirma story limiti bilan); ikkalasi ham o'chiq bo'lsa hech narsa belgilanmaydi;
+- har bir (chegirma, mahsulot) juftligi bir marta e'lon qilinadi (Redis'da belgi). Chegirma o'zgarsa (`value`, turi yoki `updated_at`) — qaytadan e'lon qilinadi; chegirma tugasa yoki o'chirilsa — belgi tozalanadi;
+- "narx tushdi" tekshiruvi (bot yuborgan mahsulotlar uchun) ham ishlashda davom etadi va bir xil chegirmani ikki marta chiqarmaydi.
+
+Admin panelda **"🔥 Chegirmalarni hozir tekshirish"** tugmasi shu tekshiruvni darhol bajaradi, navbatni joylaydi va natijani yozadi (faol chegirmalar, tegishli mahsulotlar, yangi e'lonlar, o'tkazilganlar va sababi, SKU'lar). Kunlik hisobotda: "🔥 Faol chegirmalar: N ta, e'lon qilingan: M ta".
+
+Eslatma: `cash` chegirmasi narxdan katta bo'lsa yangi narx 0 bo'ladi va mahsulot "narxsiz" deb o'tkazib yuboriladi.
 
 ## Caption
 
