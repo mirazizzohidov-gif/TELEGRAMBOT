@@ -85,8 +85,9 @@ Faqat `ADMIN_IDS` dagi foydalanuvchilar uchun. `/start` yoki `/admin`:
 
 | Tugma | Vazifasi |
 |---|---|
-| 🎲 Random albom ✅/❌ | Har kuni 16:00 da 8 ta tasodifiy mahsulotdan albom |
-| 🎲 Random → story ✅/❌ | Kunlik random albomdagi har bir mahsulot story qilib ham joylanadi |
+| 🎲 Random albom ✅/❌ | Har kuni 16:00 da 8 ta tasodifiy mahsulotni joylash |
+| 🎲 Random → story ✅/❌ | Kunlik random'dagi har bir mahsulot story qilib ham joylanadi |
+| 🎲 Random ko'rinishi: Alohida / Albom | Random postlar kanalga qanday chiqadi. **Alohida** (standart) — har bir mahsulot alohida post, ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan. **Albom** — 10 talik albomlar va undan keyin tugmali qisqa xabar |
 | 🆕 Yangi mahsulot → kanal ✅/❌ | Yangi mahsulotlarni kanallarga joylash |
 | 🆕 Yangi mahsulot → story ✅/❌ | Yangi mahsulotlar uchun story |
 | 🔥 Chegirma → kanal ✅/❌ | Chegirma va "✅ Yana sotuvda" postlarini kanallarga joylash |
@@ -131,7 +132,7 @@ Qo'lda joylash takror tekshiruvini chetlab o'tadi (avval yuborilgan bo'lsa ham j
 
 ### 🎲 Random joylash
 
-Tugmani bosing → bot "Nechta mahsulot? (1-30)" deb so'raydi → son yozing. Bot filtrdan o'tgan (rasmli, narxli, qoldig'i bor, oxirgi `Random takrorlanmaslik` kunida random'da chiqmagan) tasodifiy mahsulotlarni tanlab, albom ko'rinishida preview qiladi (10 tadan ko'p bo'lsa 10 talik albomlarga bo'linadi). Tugmalar: **📢 Kanalga**, **📱 Story**, **📢+📱 Ikkalasi**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (boshqa mahsulotlar), **❌ Bekor**.
+Tugmani bosing → bot "Nechta mahsulot? (1-30)" deb so'raydi → son yozing. Bot filtrdan o'tgan (rasmli, narxli, qoldig'i bor, oxirgi `Random takrorlanmaslik` kunida random'da chiqmagan) tasodifiy mahsulotlarni tanlab, kanalda qanday chiqsa shunday preview qiladi: "Alohida" ko'rinishda — alohida postlar, "Albom"da — 10 talik albomlar; oxirida bitta boshqaruv xabari tugmalar bilan. Tugmalar: **📢 Kanalga**, **📱 Story**, **📢+📱 Ikkalasi**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (boshqa mahsulotlar), **❌ Bekor**.
 
 ### Story — har bir joylash turida
 
@@ -177,7 +178,7 @@ Telegram'da eski narx (`25 000`) ustidan chizilgan holda ko'rinadi. Eski narx no
 
 ### Har kuni 16:00 Toshkent — `/api/cron/daily`
 
-- **Random albom** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga **bitta albom** (har rasmda o'z caption'i) qilib yuboriladi, keyin "🛒 Buyurtma berish" tugmali qisqa xabar. Oxirgi 7 kunda (sozlanadi) random albomda chiqqan mahsulotlar qaytarilmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, albomdagi har bir mahsulot story qilib ham joylanadi (story limiti bilan).
+- **Random** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga yuboriladi — standart bo'yicha **alohida postlar** (har biri ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan); "🎲 Random ko'rinishi: Albom" bo'lsa — bitta albom va tugmali qisqa xabar. 280 soniyaga sig'maganlari kanal navbatiga o'tadi va keyingi tick'da joylanadi. Oxirgi 7 kunda (sozlanadi) random albomda chiqqan mahsulotlar qaytarilmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, albomdagi har bir mahsulot story qilib ham joylanadi (story limiti bilan).
 - **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, random albom, navbatda qolganlar.
 
 ## Caption
