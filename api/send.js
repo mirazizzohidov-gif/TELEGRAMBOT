@@ -1,5 +1,5 @@
 import { resolveProduct } from '../lib/bito.js';
-import { buildCaption } from '../lib/caption.js';
+import { buildCaption, buildPostCaption } from '../lib/caption.js';
 import { orderKeyboard } from '../lib/poster.js';
 import { checkSecret, readBody } from '../lib/request.js';
 import { getSettingsSafe } from '../lib/store.js';
@@ -27,7 +27,10 @@ export default async function handler(req, res) {
     const result = await tg('sendPhoto', {
       chat_id: CHANNEL_ID,
       photo: product.image_url,
-      caption: buildCaption(product.name, product.price, settings.phone),
+      // A BITO discount -> "🔥 CHEGIRMA!" caption with the old price struck through (HTML).
+      ...(product.discount
+        ? { caption: buildPostCaption({ name: product.name, ...product.discount }, settings.phone), parse_mode: 'HTML' }
+        : { caption: buildCaption(product.name, product.price, settings.phone) }),
       reply_markup: orderKeyboard(settings.order_url),
       protect_content: PROTECT_CONTENT !== 'false',
     });

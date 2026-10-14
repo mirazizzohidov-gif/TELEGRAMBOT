@@ -1,5 +1,5 @@
 import { resolveProduct } from '../lib/bito.js';
-import { buildCaption } from '../lib/caption.js';
+import { buildCaption, buildPostCaption } from '../lib/caption.js';
 import { checkSecret, readBody } from '../lib/request.js';
 import { getSettingsSafe, listBiz, storyProfiles } from '../lib/store.js';
 import { ACTIVE_PERIODS, downloadImage, postStory, toStoryJpeg } from '../lib/story.js';
@@ -40,7 +40,9 @@ export default async function handler(req, res) {
       const story = await postStory({
         businessConnectionId: p.id,
         photo,
-        caption: buildCaption(product.name, product.price, settings.phone),
+        ...(product.discount
+          ? { caption: buildPostCaption({ name: product.name, ...product.discount }, settings.phone), parseMode: 'HTML' }
+          : { caption: buildCaption(product.name, product.price, settings.phone) }),
         activePeriod,
       });
       results.push({ profile: p.label, ok: true, story_id: story.id });

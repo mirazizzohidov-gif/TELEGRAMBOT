@@ -32,7 +32,10 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `WEBHOOK_SECRET` | yo'q | Webhook maxfiy kaliti. Bo'lmasa `SECRET` ishlatiladi. Faqat `A-Z a-z 0-9 _ -` bo'lmasa, uning SHA-256 xeshi ishlatiladi |
 | `BITO_API_URL` | yo'q | Standart: `https://api.bito.uz/integration-api/integration/api/v2` |
 | `BITO_FILE_URL` | yo'q | Standart: `https://api.bito.uz/upload-api/public` |
-| `BITO_CACHE_TTL` | yo'q | BITO mahsulot/narx keshi (soniya). Standart `600` (10 daqiqa), `0` — keshsiz |
+| `BITO_CACHE_TTL` | yo'q | BITO mahsulot/narx/chegirma keshi (soniya). Standart `600` (10 daqiqa), `0` — keshsiz |
+| `BITO_TIMEOUT_MS` | yo'q | BITO so'rovi uchun kutish vaqti (ms). Standart `60000`. Timeout yoki 5xx bo'lsa 2 soniyadan keyin 1 marta qayta uriniladi |
+| `BITO_DISCOUNT_PATH` | yo'q | Chegirmalar endpointi. Standart `/discount/get-all` (ishlamasa `/discount/get-paging`) |
+| `DISCOUNT_CASH_MODE` | yo'q | `apply_type: cash` chegirma ma'nosi: `subtract` (standart) — narx − value; `final` — value yangi narxning o'zi |
 | `CHANNEL_ID` | yo'q | Boshlang'ich kanal (`@kanal` yoki `-100...`). Admin paneldan kanal qo'shilsa, bazadagisi ishlatiladi. `/api/send` uchun majburiy |
 | `CONTACT_PHONE` | yo'q | Boshlang'ich telefon. Standart `+998982000307`. Admin panelda o'zgartiriladi |
 | `ORDER_URL` | yo'q | "🛒 Buyurtma berish" tugmasi havolasi. Standart `https://t.me/Mixpodarok0307`. Admin panelda o'zgartiriladi |
@@ -204,6 +207,29 @@ Telegram'da eski narx (`25 000`) ustidan chizilgan holda ko'rinadi. Eski narx no
 - **Random** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga yuboriladi — standart bo'yicha **alohida postlar** (har biri ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan); "🎲 Random ko'rinishi: Albom" bo'lsa — bitta albom va tugmali qisqa xabar. 280 soniyaga sig'maganlari kanal navbatiga o'tadi va keyingi tick'da joylanadi. Oxirgi 7 kunda (sozlanadi) random'da chiqqan va qora ro'yxatdagi mahsulotlar tanlanmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, albomdagi har bir mahsulot story qilib ham joylanadi (story limiti bilan).
 - **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, random albom, navbatda qolganlar.
 
+## Chegirma narxi (BITO chegirmalari)
+
+Bot BITO'dagi chegirmalarni (`/discount/get-all`, 10 daqiqa keshlanadi) narxga qo'llaydi — SKU, random, yangi mahsulot, kunlik random, story va `/api/send`, `/api/story` — hammasida. Chegirma hisobga olinadi, agar:
+
+- `state` = `active` va `live_type` = `forever` (yoki hozirgi vaqt boshlanish–tugash oralig'ida);
+- mahsulotga tegishli: mahsulotning `discount_ids` ida bor, yoki `item_added_ids` da mahsulot bor, yoki `is_all_categories`, yoki `category_ids` da mahsulot kategoriyasi bor;
+- faqat ma'lum mijozlarga (`customer_ids`) mo'ljallangan chegirmalar e'tiborga olinmaydi.
+
+Hisoblash: `percent` — narx × (1 − value/100); `cash` — narx − value (0 dan past emas; `DISCOUNT_CASH_MODE=final` bo'lsa value yangi narxning o'zi). Bir nechta chegirma bo'lsa — eng past narx. Masalan, Chakana narx 32 000, `cash` 17 000 → 15 000.
+
+Chegirmali mahsulot posti:
+
+```
+🔥 CHEGIRMA!
+
+🛍 Mahsulot nomi: …
+💰 Narxi: 32 000 → 15 000 so'm      (Telegram'da 32 000 ustidan chizilgan)
+
+📞 Buyurtma uchun murojaat qiling: …
+```
+
+Chegirmalarni olib bo'lmasa, bot asl narx bilan ishlashda davom etadi va xatoni logga yozadi.
+
 ## Caption
 
 ```
@@ -255,7 +281,7 @@ curl -X POST https://<loyiha>.vercel.app/api/send \
 - **Webhook darhol javob beradi.** Telegram'ga HTTP 200 darhol qaytariladi, ish esa `waitUntil` (`@vercel/functions`) orqali fonda davom etadi — sekin javob Telegram'ni update'ni qayta yuborishga majbur qilmaydi. Har bir `update_id` Redis'da 10 daqiqa saqlanadi va takrorlari o'tkazib yuboriladi.
 - **Tugma bosilganda** birinchi bo'lib `answerCallbackQuery` ("⏳ Bajarilmoqda...") yuboriladi. Uzoq amallarda bot darhol xabar yozadi ("🔎 SKU 670899 qidirilmoqda...", "🚀 Yangi mahsulotlar tekshirilmoqda...", "⏳ 3 ta mahsulot joylanmoqda...") va keyin o'sha xabarni natija bilan tahrirlaydi.
 - **"🚀 Hozir joylash" har doim natija yozadi:** "Yangi mahsulot topilmadi (oxirgi tekshiruv: HH:MM)" yoki "N ta topildi: X ta kanalga, Y ta story; o'tkazildi: rasmsiz A, narxsiz B, qoldiq 0 C, takror D", joylangan SKU'lar ro'yxati, xato bo'lsa xato matni.
-- **BITO:** har bir so'rov vaqti logga yoziladi (`BITO /product/get-paging {...} -> 200 in 340 ms` — Vercel → Logs), 10 soniyalik timeout. Mahsulot (SKU bo'yicha), narx, katalog sahifalari va mahsulotlar soni Redis'da 10 daqiqa keshlanadi (narxi yo'q mahsulot keshlanmaydi — narx keyin kiritilsa darhol ko'rinadi). Bir nechta SKU va narxlar parallel so'raladi. Random katalogni to'liq o'qimaydi — 1–2 ta tasodifiy sahifa oladi.
+- **BITO:** har bir so'rov vaqti logga yoziladi (`BITO /product/get-paging {...} -> 200 in 340 ms (attempt 1)` — Vercel → Logs). BITO sekin javob berishi mumkin, shuning uchun 60 soniya kutiladi (`BITO_TIMEOUT_MS`); timeout yoki 5xx bo'lsa 2 soniyadan keyin bir marta qayta uriniladi. Sahifalar kichik (ro'yxat 30, SKU qidiruv 20). Admin 15 soniyadan ko'p kutsa, "⏳" xabari "⏳ BITO javobini kutyapman..." deb yangilanadi. Mahsulot (SKU bo'yicha), narx, katalog sahifalari va mahsulotlar soni Redis'da 10 daqiqa keshlanadi (narxi yo'q mahsulot keshlanmaydi — narx keyin kiritilsa darhol ko'rinadi). Bir nechta SKU va narxlar parallel so'raladi. Random katalogni to'liq o'qimaydi — 1–2 ta tasodifiy sahifa oladi.
 - **Telegram:** 10 soniyalik timeout; rasm yuboradigan metodlar (sendPhoto, albom, story) uchun 30 soniya (erta uzish dublikat postga olib kelishi mumkin).
 - **Redis** ulanishi modul darajasida bir marta ochiladi va keyingi so'rovlarda qayta ishlatiladi.
 - **sharp** (rasmni story uchun 1080×1920 ga moslash) faqat story yuborilayotganda yuklanadi.
