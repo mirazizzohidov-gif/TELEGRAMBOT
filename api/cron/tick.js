@@ -1,6 +1,6 @@
-import { runTick } from '../../lib/poster.js';
 import { checkCron } from '../../lib/request.js';
 import { hasRedis } from '../../lib/store.js';
+import { runTick } from '../../lib/tick.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -13,6 +13,6 @@ export default async function handler(req, res) {
   try {
     return res.status(200).json({ ok: true, ...(await runTick()) });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: String(err) });
+    return res.status(err.status || 500).json({ ok: false, error: err.message, details: err.details });
   }
 }

@@ -1,6 +1,6 @@
 # BITO Telegram bot (Vercel)
 
-BITO'dagi mahsulotlarni Telegram kanallarga va Telegram Business story'ga joylovchi bot. Telegram ichida admin panel, kunlik avtomatik joylash, navbat, chegirma va "yana sotuvda" postlari bor.
+BITO'dagi mahsulotlarni Telegram kanallarga va Telegram Business story'ga joylovchi bot. Telegram ichida admin panel bor. Yangi mahsulotlar va chegirmalar har 15 daqiqada avtomatik joylanadi, har kuni 16:00 da tasodifiy mahsulotlar albomi chiqadi.
 
 ## Endpointlar
 
@@ -8,8 +8,8 @@ BITO'dagi mahsulotlarni Telegram kanallarga va Telegram Business story'ga joylov
 |---|---|---|
 | `POST /api/webhook` | `X-Telegram-Bot-Api-Secret-Token` | Telegram update'lari (admin panel, biznes ulanishlar) |
 | `GET /api/setup-webhook` | `x-secret` | Webhook'ni o'rnatadi (bir marta chaqiriladi) |
-| `GET /api/cron/daily` | `CRON_SECRET` yoki `x-secret` | Kunlik joylash (Vercel cron, har kuni 21:00 Toshkent) |
-| `GET /api/cron/tick` | `CRON_SECRET` yoki `x-secret` | Navbatdan 10 tagacha mahsulot joylaydi |
+| `GET /api/cron/daily` | `CRON_SECRET` yoki `x-secret` | Har kuni 16:00 Toshkent (11:00 UTC, Vercel cron): random albom + kunlik hisobot |
+| `GET /api/cron/tick` | `CRON_SECRET` yoki `x-secret` | Har 15 daqiqa: yangi mahsulotlar, chegirmalar, navbat |
 | `POST /api/send` | `x-secret` | Bitta mahsulotni kanalga qo'lda yuborish |
 | `POST /api/story` | `x-secret` | Bitta mahsulotni story qilib joylash |
 | `GET /api/business-id` | `x-secret` | Saqlangan biznes ulanishlar ro'yxati |
@@ -35,7 +35,8 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `CONTACT_PHONE` | yo'q | Boshlang'ich telefon. Standart `+998982000307`. Admin panelda o'zgartiriladi |
 | `ORDER_URL` | yo'q | "🛒 Buyurtma berish" tugmasi havolasi. Standart `https://t.me/Mixpodarok0307`. Admin panelda o'zgartiriladi |
 | `BUSINESS_CONNECTION_ID` | yo'q | Story uchun biznes ulanish. Odatda admin paneldan tanlanadi |
-| `STORY_DAILY_LIMIT` | yo'q | Kuniga ko'pi bilan nechta story. Standart `3` |
+| `STORY_DAILY_LIMIT` | yo'q | Yangi mahsulot story'lari kunlik limiti. Standart `20`. Admin panelda o'zgartirilsa, o'sha qiymat ishlatiladi |
+| `DISCOUNT_STORY_DAILY_LIMIT` | yo'q | Chegirma story'lari uchun alohida kunlik limit. Standart `5` |
 | `PROTECT_CONTENT` | yo'q | Standart: yoqilgan (postlarni forward/saqlab bo'lmaydi). O'chirish: `false` |
 
 \* Redis uchun ikkala juftlikdan bittasi yetarli.
@@ -57,11 +58,20 @@ Admin panelda saqlangan sozlama (telefon, kanallar, havola, profil) env qiymatid
 
    Shundan keyin bot Telegram'dagi xabarlarga javob beradi. `WEBHOOK_SECRET` yoki domen o'zgarsa, qayta chaqiring.
 5. **Admin panel.** Botga `/start` yoki `/admin` yozing.
-6. **Story (ixtiyoriy).** Telegram → Settings → Telegram Business → Chatbots → botni qo'shing va story huquqini bering. Bot ulanishni o'zi saqlaydi va adminlarga xabar beradi. Admin panelda "📱 Profil" orqali profilni tanlang va "Story" ni yoqing. Bir nechta biznes profil qo'llab-quvvatlanadi.
-7. **Navbat uchun tashqi cron.** Vercel Hobby rejasida cron kuniga 1 marta ishlaydi, shuning uchun navbatni [cron-job.org](https://cron-job.org) orqali **har 15 daqiqada** chaqiring:
-   - URL: `https://<loyiha>.vercel.app/api/cron/tick`
-   - Method: `GET`
-   - Header: `Authorization: Bearer <CRON_SECRET>` (yoki `x-secret: <SECRET>`)
+6. **Story (ixtiyoriy).** Telegram → Settings → Telegram Business → Chatbots → botni qo'shing va story huquqini bering. Bot ulanishni o'zi saqlaydi va adminlarga xabar beradi. Admin panelda "📱 Profil" orqali profilni tanlang va kerakli story tugmalarini yoqing. Bir nechta biznes profil qo'llab-quvvatlanadi.
+7. **Har 15 daqiqalik cron (`/api/cron/tick`).**
+   - **Hobby (bepul) tarif:** Vercel cron kuniga faqat 1 marta ishlaydi, shuning uchun [cron-job.org](https://cron-job.org) da vazifa yarating:
+     - URL: `https://<loyiha>.vercel.app/api/cron/tick`
+     - Schedule: har 15 daqiqa
+     - Method: `GET`
+     - Header: `Authorization: Bearer <CRON_SECRET>` (yoki `x-secret: <SECRET>`)
+   - **Pro tarif:** tashqi cron shart emas — `vercel.json` dagi `crons` ro'yxatiga qo'shing:
+
+     ```json
+     { "path": "/api/cron/tick", "schedule": "*/15 * * * *" }
+     ```
+
+     (Hobby'da bu qatorni qo'shmang — Vercel kuniga 1 martadan ko'p cron'li deployni rad etadi.)
 
 ## Admin panel
 
@@ -69,32 +79,55 @@ Faqat `ADMIN_IDS` dagi foydalanuvchilar uchun. `/start` yoki `/admin`:
 
 | Tugma | Vazifasi |
 |---|---|
-| 📞 Telefon: … | Caption'dagi telefon raqamini o'zgartiradi |
-| 🛒 Buyurtma havolasi | "🛒 Buyurtma berish" tugmasi havolasini o'zgartiradi |
+| 🎲 Random albom ✅/❌ | Har kuni 16:00 da 8 ta tasodifiy mahsulotdan albom |
+| 🆕 Yangi mahsulot → kanal ✅/❌ | Yangi mahsulotlarni kanallarga joylash |
+| 🆕 Yangi mahsulot → story ✅/❌ | Yangi mahsulotlar uchun story |
+| 🔥 Chegirma → kanal ✅/❌ | Chegirma va "✅ Yana sotuvda" postlarini kanallarga joylash |
+| 🔥 Chegirma → story ✅/❌ | Chegirma uchun story |
+| Albom rejimi ✅/❌ | Bir vaqtda 2+ yangi mahsulot chiqsa, bitta albom qilib yuboradi |
+| 📱 Story kunlik limiti | Yangi mahsulot story'lari limiti (0–100) |
+| 📱 Profil | Story qaysi biznes profilga joylanishi |
+| 📞 Telefon | Caption'dagi telefon raqami |
 | 📢 Kanallar | Kanal qo'shish (`@username` yoki `-100...`), o'chirish, faol/nofaol qilish |
-| Kanalga yuborish ✅/❌ | Avtomatik kanal postlarini yoqish/o'chirish |
-| Story ✅/❌ · 📱 Profil | Avtomatik story'ni yoqish va biznes profilni tanlash |
-| Albom rejimi ✅/❌ | 2+ mahsulot bo'lsa bitta albom (sendMediaGroup) qilib yuboradi |
-| 🎲 Random rejim ✅/❌ | Bugun yangi mahsulot bo'lmasa, 10 ta tasodifiy mahsulot taklif qiladi |
-| 🚀 Hozir joylash | Bugungi yangi mahsulotlarni darhol navbatga qo'yib joylaydi |
+| 🛒 Buyurtma havolasi | "🛒 Buyurtma berish" tugmasi havolasi |
+| 🚀 Hozir joylash | 15 daqiqalik tekshiruvni darhol ishga tushiradi |
 | 📊 Bugungi hisobot | Bugungi statistika |
+
+Standart holat: kanalga yuborish (yangi va chegirma) yoqilgan; story'lar, random albom va albom rejimi o'chiq.
 
 **SKU bo'yicha joylash:** botga SKU yozing (masalan `670897`). Bot mahsulot ko'rinishini (preview) yuboradi: "✅ Kanalga joylash" / "📱 Story" / "❌ Bekor".
 
 ## Avtomatik joylash qanday ishlaydi
 
-**Kunlik (`/api/cron/daily`, har kuni 16:00 UTC = 21:00 Toshkent):**
+### Har 15 daqiqa — `/api/cron/tick`
 
-1. BITO'dan bugun (Asia/Tashkent) qo'shilgan mahsulotlarni oladi.
-2. O'tkazib yuboradi: rasmsiz, narxsiz (narx yo'q yoki 0), qoldig'i 0 (barcha filiallar yig'indisi), avval yuborilgan (takror).
-3. Qolganlarini navbatga qo'yadi.
-4. Bugun yangi mahsulot bo'lmasa: random rejim yoqilgan bo'lsa adminlardan "10 ta tasodifiy mahsulot joylaymi?" deb so'raydi ("✅ Ha, joyla" bosilganda tanlaydi va joylaydi); o'chiq bo'lsa hech narsa qilmaydi, faqat hisobotda yozadi.
-5. Oxirgi 200 ta yuborilgan mahsulotning joriy narxi va qoldig'ini tekshiradi: narx tushgan bo'lsa **🔥 Chegirma!** (eski narx ustidan chizilgan + yangi narx), qoldiq 0 dan ko'paygan bo'lsa **✅ Yana sotuvda** posti navbatga qo'yiladi.
-6. Navbatni bir marta joylaydi (tick) va adminlarga hisobot yuboradi.
+1. **Yangi mahsulotlar.** Oxirgi tekshiruvdan beri BITO'ga qo'shilgan mahsulotlar olinadi (vaqt bazada `last_checked_at` sifatida saqlanadi; birinchi ishga tushishda faqat oxirgi 15 daqiqa). O'tkazib yuboriladiganlar: rasmsiz, narxsiz (narx yo'q yoki 0), qoldig'i 0 (barcha filiallar yig'indisi), takror (shu SKU avval boshqa mahsulot bilan yuborilgan). Narxi, rasmi yoki qoldig'i keyinroq kiritilgan mahsulotlar 2 soat davomida qayta tekshiriladi, shuning uchun ular ham chiqadi. Hech bir mahsulot ikki marta joylanmaydi.
+   - "Yangi mahsulot → kanal" yoqilgan bo'lsa — har biri alohida post (albom rejimida 2+ bo'lsa — albom).
+   - "Yangi mahsulot → story" yoqilgan bo'lsa — har biri uchun story, kunlik limitgacha. Limitdan oshganlari navbatda qoladi va ertasi kuni chiqadi.
+2. **Chegirma.** Bot kuzatayotgan oxirgi 200 ta mahsulot tekshiriladi (har tick'da 50 tadan, navbat bilan — 200 tasi taxminan soatda bir aylanadi). Chegirma ikki yo'l bilan aniqlanadi:
+   - narx ro'yxatidagi narx avval saqlangan narxdan kamaygan;
+   - mahsulotda `discount_ids` paydo bo'lgan (yoki o'zgargan) va bu chegirma avval qayd etilmagan.
 
-**Navbat (`/api/cron/tick`):** har chaqiruvda 10 tagacha mahsulot. Albom rejimida — bitta albom va undan keyin "🛒 Buyurtma berish" tugmali qisqa xabar; aks holda har biri alohida, 3 soniya oraliq bilan, tugma bilan. Har bir faol kanalga yuboriladi. Story yoqilgan bo'lsa kuniga `STORY_DAILY_LIMIT` tagacha story. Bir chaqiruv 280 soniyadan oshmaydi; ulgurmaganlar navbatda qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi, baribir bo'lmasa mahsulot navbatga qaytariladi.
+   "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (`DISCOUNT_STORY_DAILY_LIMIT` gacha, yangi mahsulot limitidan alohida). Bitta mahsulotning bitta chegirmasi uchun faqat bir marta chiqadi. Qoldig'i 0 dan ko'paygan mahsulot uchun "✅ Yana sotuvda" posti (kanalga, "Chegirma → kanal" yoqilgan bo'lsa).
+3. **Navbat.** Kanal navbatidan 10 tagacha mahsulot (har biri 3 soniya oraliq bilan) va story navbati bajariladi. Bitta tick 280 soniyadan oshmaydi — ulgurmagani keyingi tick'ka qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi; baribir bo'lmasa navbatga qaytariladi. Bir vaqtda ikkita tick ishlamaydi.
 
-**Hisobot:** nechta yangi mahsulot topildi, nechta joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirma va yana sotuvda postlari.
+Chegirma caption'i:
+
+```
+🔥 CHEGIRMA!
+
+🛍 Mahsulot nomi: 1637-03 copy
+💰 Narxi: 25 000 → 22 000 so'm
+
+📞 Buyurtma uchun murojaat qiling: +998982000307
+```
+
+Telegram'da eski narx (`25 000`) ustidan chizilgan holda ko'rinadi. Eski narx noma'lum bo'lsa (masalan, faqat `discount_ids` bo'yicha aniqlangan chegirma), faqat joriy narx yoziladi.
+
+### Har kuni 16:00 Toshkent — `/api/cron/daily`
+
+- **Random albom** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor 8 ta tasodifiy mahsulot tanlanadi va har bir faol kanalga **bitta albom** (har rasmda o'z caption'i) qilib yuboriladi, keyin "🛒 Buyurtma berish" tugmali qisqa xabar. Oxirgi 7 kunda random albomda chiqqan mahsulotlar qaytarilmaydi. Kuniga bir marta.
+- **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, random albom, navbatda qolganlar.
 
 ## Caption
 
@@ -144,5 +177,6 @@ curl -X POST https://<loyiha>.vercel.app/api/send \
 
 ## Eslatmalar
 
+- Kanal postlarida "🛒 Buyurtma berish" tugmasi bor. Albom (sendMediaGroup) tugmani qo'llamaydi, shuning uchun albomdan keyin tugmali qisqa xabar yuboriladi.
 - `vercel.json` funksiyalarga 300 soniya beradi (Fluid compute, yangi loyihalarda standart yoqilgan). Deploy shu sababli xato bersa, **Settings → Functions → Fluid Compute** ni yoqing.
 - Webhook o'rnatilgandan keyin `getUpdates` ishlamaydi — biznes ulanishlar bazaga webhook orqali yoziladi, `/api/business-id` ularni bazadan qaytaradi.
