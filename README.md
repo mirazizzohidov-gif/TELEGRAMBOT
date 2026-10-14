@@ -1,71 +1,96 @@
 # BITO Telegram bot (Vercel)
 
-Telegram kanalga mahsulot rasmi, nomi va narxini yuboruvchi oddiy Vercel funksiyasi. Mahsulot ma'lumotlari JSON body'da yuboriladi yoki faqat `sku` berilsa, BITO'dan avtomatik olinadi.
+BITO'dagi mahsulotni (rasm, nom, narx) Telegram kanalga post qiluvchi va Telegram Business orqali story joylovchi Vercel funksiyalari.
 
-## O'rnatish
+| Endpoint                | Vazifasi                                                    |
+|-------------------------|-------------------------------------------------------------|
+| `POST /api/send`        | Kanalga rasmli post yuboradi                                |
+| `POST /api/story`       | Business hisobingizga story joylaydi                         |
+| `GET /api/business-id`  | `BUSINESS_CONNECTION_ID` ni topish uchun yordamchi endpoint |
 
-1. Repo'ni Vercel'ga import qiling.
-2. Vercel loyihasida **Settings → Environment Variables** bo'limiga quyidagilarni qo'shing:
+Barcha endpointlar `x-secret` sarlavhasi bilan himoyalangan.
 
-| O'zgaruvchi  | Tavsif                                                           |
-|--------------|------------------------------------------------------------------|
-| `BOT_TOKEN`  | @BotFather bergan bot tokeni                                     |
-| `CHANNEL_ID` | Kanal ID (`-100...`) yoki `@kanal_nomi`                          |
-| `SECRET`     | So'rovlarni himoyalash uchun o'zingiz o'ylab topgan maxfiy kalit |
+## Environment o'zgaruvchilari
 
-BITO'dan avtomatik olish uchun (ixtiyoriy) qo'shimcha:
+Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan keyin **Redeploy** qiling.
 
-| O'zgaruvchi     | Tavsif                                                                 |
-|-----------------|------------------------------------------------------------------------|
-| `BITO_API_URL`  | BITO API asosiy manzili (masalan `https://.../api`)                    |
-| `BITO_API_KEY`  | BITO API kaliti (`Authorization: Bearer ...` sifatida yuboriladi)      |
-| `BITO_PRICE_ID` | Narx ro'yxati ID si (masalan, "Chakana (so'm)" ro'yxatining ID si)      |
-| `BITO_FILE_URL` | Rasmlar manzili (`/uploads/...` oldiga qo'shiladi). Bo'lmasa `BITO_API_URL` ishlatiladi |
+| O'zgaruvchi              | Majburiy        | Tavsif |
+|--------------------------|-----------------|--------|
+| `BOT_TOKEN`              | ha              | @BotFather bergan bot tokeni |
+| `CHANNEL_ID`             | `/api/send` uchun | Kanal ID (`-100...`) yoki `@kanal_nomi` |
+| `SECRET`                 | ha              | So'rovlarni himoyalash uchun o'zingiz o'ylab topgan maxfiy kalit |
+| `BITO_API_KEY`           | `latest`/`sku` uchun | BITO integratsiya kaliti, `username:secret` ko'rinishida (`api-key` sarlavhasida yuboriladi) |
+| `BITO_PRICE_ID`          | `latest`/`sku` uchun | Narx ro'yxati ID si (masalan, "Chakana (so'm)") |
+| `BITO_API_URL`           | yo'q            | Standart: `https://api.bito.uz/integration-api/integration/api/v2` |
+| `BITO_FILE_URL`          | yo'q            | Standart: `https://api.bito.uz/upload-api/public` (mahsulot `image` yo'li oldiga qo'shiladi) |
+| `PROTECT_CONTENT`        | yo'q            | Standart: yoqilgan (kanal postini forward/saqlab bo'lmaydi). O'chirish uchun `false` |
+| `BUSINESS_CONNECTION_ID` | `/api/story` uchun | Business ulanish ID si (pastda qanday topish ko'rsatilgan) |
 
-> BITO endpoint yo'llari `api/send.js` boshida (`BITO_PRODUCT_PATH`, `BITO_PRICE_ITEMS_PATH`). BITO hujjatlarida boshqacha bo'lsa, shu ikki qatorni o'zgartiring.
+> Token, kalit va secret qiymatlarini hech qachon kodga yoki repo'ga yozmang — faqat Vercel env o'zgaruvchilarida saqlang.
 
-3. Botni kanalga administrator sifatida qo'shing (xabar yuborish huquqi bilan).
-4. O'zgaruvchilarni kiritgach, loyihani qayta deploy qiling.
+Botni kanalga administrator sifatida qo'shing (xabar yuborish huquqi bilan).
 
-> Token va secret qiymatlarini hech qachon kodga yoki repo'ga yozmang — faqat Vercel env o'zgaruvchilarida saqlang.
+## Mahsulotni tanlash (send va story uchun bir xil)
 
-## Foydalanish
+Body uchta rejimdan birida yuboriladi:
 
-`POST /api/send` so'rovini `x-secret` sarlavhasi va JSON body bilan yuboring:
+**1. Eng yangi mahsulot** — BITO'dagi eng oxirgi qo'shilgan mahsulot (`created_at` bo'yicha):
 
 ```bash
 curl -X POST https://<loyiha>.vercel.app/api/send \
-  -H "x-secret: ..." \
-  -H "Content-Type: application/json" \
+  -H "x-secret: ..." -H "Content-Type: application/json" \
+  -d '{"latest":true}'
+```
+
+**2. SKU bo'yicha:**
+
+```bash
+curl -X POST https://<loyiha>.vercel.app/api/send \
+  -H "x-secret: ..." -H "Content-Type: application/json" \
+  -d '{"sku":"1637-03"}'
+```
+
+**3. Qo'lda** (BITO'ga murojaat qilinmaydi):
+
+```bash
+curl -X POST https://<loyiha>.vercel.app/api/send \
+  -H "x-secret: ..." -H "Content-Type: application/json" \
   -d '{"name":"1637-03 copy","price":"22 000","image_url":"https://..."}'
 ```
 
-Yoki faqat SKU bilan (nom, narx va rasm BITO'dan olinadi):
+Narx `BITO_PRICE_ID` narx ro'yxatidan olinadi va `22 000` ko'rinishida yoziladi.
 
-```bash
-curl -X POST https://<loyiha>.vercel.app/api/send \
-  -H "x-secret: ..." \
-  -H "Content-Type: application/json" \
-  -d '{"sku":"670897"}'
-```
+## Story joylash
 
-Body maydonlari (`sku` bo'lmasa, uchalasi majburiy):
+1. **Business ulanish.** Telegram'da: Settings → Telegram Business → Chatbots → botingizni qo'shing va story boshqarish huquqini bering.
+2. **ID ni topish.** Ulagandan keyin:
 
-| Maydon      | Tavsif                              |
-|-------------|-------------------------------------|
-| `name`      | Mahsulot nomi                       |
-| `price`     | Mahsulot narxi (so'mda)             |
-| `image_url` | Mahsulot rasmining ochiq URL manzili |
-| `sku`       | BITO'dagi mahsulot SKU si (ixtiyoriy) |
+   ```bash
+   curl https://<loyiha>.vercel.app/api/business-id -H "x-secret: ..."
+   ```
+
+   Javobdagi `connections[].id` ni oling. Bo'sh bo'lsa — botni Business'dan olib tashlab, qayta ulang va yana so'rang. (Bu `getUpdates` orqali ishlaydi, shuning uchun botda webhook o'rnatilmagan bo'lishi kerak.)
+3. **Env.** Topilgan ID ni Vercel'da `BUSINESS_CONNECTION_ID` ga yozing va Redeploy qiling.
+4. **Story yuborish** (body yuqoridagi uchta rejimdan biri):
+
+   ```bash
+   curl -X POST https://<loyiha>.vercel.app/api/story \
+     -H "x-secret: ..." -H "Content-Type: application/json" \
+     -d '{"latest":true,"active_period":86400}'
+   ```
+
+   `active_period` (soniya): `21600` (6 soat), `43200` (12 soat), `86400` (24 soat, standart), `172800` (48 soat).
+
+Rasm avtomatik 1080×1920 ga moslashtiriladi (oq fon, JPEG). Story uchun Telegram hisobida Premium kerak bo'lishi mumkin.
 
 ## Javoblar
 
-| Kod   | Ma'nosi                                                       |
-|-------|---------------------------------------------------------------|
-| `200` | Xabar yuborildi: `{ "ok": true, "message_id": ... }`          |
-| `400` | `name`, `price` yoki `image_url` yo'q, yoki body JSON emas    |
-| `404` | `sku` bo'yicha BITO'da mahsulot topilmadi                     |
-| `401` | `x-secret` noto'g'ri yoki yo'q                                |
-| `405` | So'rov `POST` emas                                            |
-| `500` | Env o'zgaruvchilari yetishmaydi yoki ichki xato               |
-| `502` | Telegram yoki BITO API xato qaytardi (`details` maydonida)    |
+| Kod   | Ma'nosi |
+|-------|---------|
+| `200` | Muvaffaqiyatli: `send` → `message_id`, `story` → `story_id`, `business-id` → `connections` |
+| `400` | Maydonlar yetishmaydi, body JSON emas yoki `active_period` noto'g'ri |
+| `401` | `x-secret` noto'g'ri yoki yo'q |
+| `404` | BITO'da mahsulot yoki uning narxi topilmadi |
+| `405` | Noto'g'ri HTTP metod |
+| `500` | Env o'zgaruvchilari yetishmaydi yoki ichki xato |
+| `502` | Telegram yoki BITO xato qaytardi, yoki rasm yuklab/qayta ishlab bo'lmadi (`details` maydonida) |
