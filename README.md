@@ -108,6 +108,7 @@ Admin panel menyusi (`⚙️ Admin panel`):
 | Albom rejimi ✅/❌ | Bir vaqtda 2+ yangi mahsulot chiqsa, albom qilib yuboradi (10 tadan) |
 | ⚙️ Limitlar | Kunlik va tick limitlari (pastda) |
 | 📱 Profil | Story qaysi biznes profilga joylanishi |
+| 🚫 Random qora ro'yxat | Random'dan butunlay chiqarilgan mahsulotlar; bosib qaytarish mumkin |
 | 📞 Telefon | Caption'dagi telefon raqami |
 | 📢 Kanallar | Kanal qo'shish (`@username` yoki `-100...`), o'chirish, faol/nofaol qilish |
 | 🛒 Buyurtma havolasi | "🛒 Buyurtma berish" tugmasi havolasi |
@@ -145,7 +146,15 @@ Qo'lda joylash takror tekshiruvini chetlab o'tadi (avval yuborilgan bo'lsa ham j
 
 ### 🎲 Random joylash
 
-Tugmani bosing → bot "Nechta mahsulot? (1-30)" deb so'raydi → son yozing. Bot filtrdan o'tgan (rasmli, narxli, qoldig'i bor, oxirgi `Random takrorlanmaslik` kunida random'da chiqmagan) tasodifiy mahsulotlarni tanlab, kanalda qanday chiqsa shunday preview qiladi: "Alohida" ko'rinishda — alohida postlar, "Albom"da — 10 talik albomlar; oxirida bitta boshqaruv xabari tugmalar bilan. Tugmalar: **📢 Kanalga**, **📱 Story**, **📢+📱 Ikkalasi**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (boshqa mahsulotlar), **❌ Bekor**.
+Tugmani bosing → bot "Nechta mahsulot? (1-30)" deb so'raydi → son yozing. Bot filtrdan o'tgan (rasmli, narxli, qoldig'i bor, oxirgi `Random takrorlanmaslik` kunida random'da chiqmagan) tasodifiy mahsulotlarni tanlab, har birini alohida preview post qilib ko'rsatadi. Har bir post ostida o'z tugmalari bor:
+
+- **❌ Olib tashlash** — mahsulot tanlovdan chiqadi, preview posti o'chiriladi;
+- **🔄 Almashtirish** — o'rniga boshqa mos tasodifiy mahsulot qo'yiladi (shu post yangi rasm va caption bilan yangilanadi);
+- **🚫 Hech qachon** — mahsulot random qora ro'yxatiga yoziladi va boshqa hech qachon random'da (kunlik 16:00 random'da ham) tanlanmaydi.
+
+Oxirida bitta boshqaruv xabari: **Tanlangan: N ta** (har o'zgarishda yangilanadi) va tugmalar **📢 Kanalga**, **📱 Story**, **📢+📱 Ikkalasi**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (butunlay yangi tanlov), **❌ Bekor**. Joylash faqat qolgan mahsulotlarga tegishli. Kanalga "🎲 Random ko'rinishi" bo'yicha (alohida postlar yoki albom) chiqadi. Har bir preview o'z sessiya ID si bilan bazada saqlanadi, shuning uchun bir nechta preview bir-biriga aralashmaydi.
+
+Qora ro'yxatni admin paneldagi **🚫 Random qora ro'yxat** bo'limida ko'rish va mahsulotni bosib random'ga qaytarish mumkin.
 
 ### Story — har bir joylash turida
 
@@ -191,7 +200,7 @@ Telegram'da eski narx (`25 000`) ustidan chizilgan holda ko'rinadi. Eski narx no
 
 ### Har kuni 16:00 Toshkent — `/api/cron/daily`
 
-- **Random** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga yuboriladi — standart bo'yicha **alohida postlar** (har biri ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan); "🎲 Random ko'rinishi: Albom" bo'lsa — bitta albom va tugmali qisqa xabar. 280 soniyaga sig'maganlari kanal navbatiga o'tadi va keyingi tick'da joylanadi. Oxirgi 7 kunda (sozlanadi) random albomda chiqqan mahsulotlar qaytarilmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, albomdagi har bir mahsulot story qilib ham joylanadi (story limiti bilan).
+- **Random** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga yuboriladi — standart bo'yicha **alohida postlar** (har biri ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan); "🎲 Random ko'rinishi: Albom" bo'lsa — bitta albom va tugmali qisqa xabar. 280 soniyaga sig'maganlari kanal navbatiga o'tadi va keyingi tick'da joylanadi. Oxirgi 7 kunda (sozlanadi) random'da chiqqan va qora ro'yxatdagi mahsulotlar tanlanmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, albomdagi har bir mahsulot story qilib ham joylanadi (story limiti bilan).
 - **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, random albom, navbatda qolganlar.
 
 ## Caption
