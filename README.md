@@ -23,8 +23,9 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `BOT_TOKEN` | ha | @BotFather bergan bot tokeni |
 | `SECRET` | ha | `x-secret` sarlavhasi uchun o'zingiz o'ylab topgan maxfiy kalit |
 | `ADMIN_IDS` | ha | Admin panelga kira oladiganlarning Telegram user ID lari, vergul bilan: `123456789,987654321` |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | ha* | Upstash Redis ulanishi |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ha* | Yoki Vercel Marketplace (Upstash) avtomatik qo'shadigan o'zgaruvchilar |
+| `REDIS_URL` | ha* | **Asosiy variant.** Redis ulanishi (`redis://` yoki `rediss://`). Vercel → Storage → Redis ulanganda avtomatik qo'shiladi |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | ha* | Muqobil: Upstash REST API |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ha* | Muqobil: Vercel Marketplace'dagi Upstash beradigan o'zgaruvchilar |
 | `BITO_API_KEY` | ha | BITO integratsiya kaliti, `username:secret` ko'rinishida (`api-key` sarlavhasida yuboriladi) |
 | `BITO_PRICE_ID` | ha | Narx ro'yxati ID si (masalan, "Chakana (so'm)") |
 | `CRON_SECRET` | tavsiya | Vercel cron shu qiymatni `Authorization: Bearer ...` qilib yuboradi |
@@ -35,11 +36,16 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `CONTACT_PHONE` | yo'q | Boshlang'ich telefon. Standart `+998982000307`. Admin panelda o'zgartiriladi |
 | `ORDER_URL` | yo'q | "🛒 Buyurtma berish" tugmasi havolasi. Standart `https://t.me/Mixpodarok0307`. Admin panelda o'zgartiriladi |
 | `BUSINESS_CONNECTION_ID` | yo'q | Story uchun biznes ulanish. Odatda admin paneldan tanlanadi |
-| `STORY_DAILY_LIMIT` | yo'q | Yangi mahsulot story'lari kunlik limiti. Standart `20`. Admin panelda o'zgartirilsa, o'sha qiymat ishlatiladi |
-| `DISCOUNT_STORY_DAILY_LIMIT` | yo'q | Chegirma story'lari uchun alohida kunlik limit. Standart `5` |
+| `STORY_DAILY_LIMIT` | yo'q | Yangi mahsulot story'lari kunlik limiti, standart `20` |
+| `DISCOUNT_STORY_DAILY_LIMIT` | yo'q | Chegirma story'lari kunlik limiti, standart `5` |
+| `RANDOM_ALBUM_SIZE` | yo'q | Kunlik random albomdagi mahsulotlar soni, standart `8` (2–10) |
+| `TICK_MAX_POSTS` | yo'q | Bitta tick'da kanalga yuboriladigan maksimal post, standart `10` |
+| `RANDOM_REPEAT_DAYS` | yo'q | Random albomda mahsulot necha kun takrorlanmaydi, standart `7` |
+
+Limit o'zgaruvchilari faqat standart qiymat — admin paneldagi "⚙️ Limitlar" bo'limida o'zgartirilgan qiymat bazada saqlanadi va ustun turadi.
 | `PROTECT_CONTENT` | yo'q | Standart: yoqilgan (postlarni forward/saqlab bo'lmaydi). O'chirish: `false` |
 
-\* Redis uchun ikkala juftlikdan bittasi yetarli.
+\* Redis uchun bittasi yetarli. REST o'zgaruvchilari (Upstash/KV) bo'lsa `@upstash/redis` ishlatiladi, aks holda `REDIS_URL` orqali rasmiy `redis` (node-redis) paketi. Ikkala holatda ham bot bir xil ishlaydi. `REDIS_URL` ulanishi modul darajasida keshlanadi (har so'rovda yangi ulanish ochilmaydi), uzilib qolsa avtomatik qayta ulanadi.
 
 > Token, kalit va secret qiymatlarini hech qachon kodga yoki repo'ga yozmang — faqat Vercel env o'zgaruvchilarida saqlang.
 
@@ -47,7 +53,7 @@ Admin panelda saqlangan sozlama (telefon, kanallar, havola, profil) env qiymatid
 
 ## Sozlash tartibi
 
-1. **Redis.** Vercel → loyiha → **Storage → Create Database → Upstash (Redis)** → loyihaga ulang. `KV_REST_API_URL` / `KV_REST_API_TOKEN` avtomatik qo'shiladi. (Yoki upstash.com'da baza ochib, `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` ni qo'lda kiriting.)
+1. **Redis.** Vercel → loyiha → **Storage → Create Database → Redis** → loyihaga ulang. `REDIS_URL` avtomatik qo'shiladi — boshqa hech narsa kerak emas. (Muqobil: Upstash — `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` yoki `KV_REST_API_URL`/`KV_REST_API_TOKEN`.)
 2. **Env.** Yuqoridagi majburiy o'zgaruvchilarni kiriting (`ADMIN_IDS` — o'z ID ingizni @userinfobot orqali bilib olasiz). Redeploy qiling.
 3. **Kanal.** Botni har bir kanalga administrator qilib qo'shing (xabar yuborish huquqi bilan).
 4. **Webhook.** Bir marta chaqiring:
@@ -84,18 +90,45 @@ Faqat `ADMIN_IDS` dagi foydalanuvchilar uchun. `/start` yoki `/admin`:
 | 🆕 Yangi mahsulot → story ✅/❌ | Yangi mahsulotlar uchun story |
 | 🔥 Chegirma → kanal ✅/❌ | Chegirma va "✅ Yana sotuvda" postlarini kanallarga joylash |
 | 🔥 Chegirma → story ✅/❌ | Chegirma uchun story |
-| Albom rejimi ✅/❌ | Bir vaqtda 2+ yangi mahsulot chiqsa, bitta albom qilib yuboradi |
-| 📱 Story kunlik limiti | Yangi mahsulot story'lari limiti (0–100) |
+| Albom rejimi ✅/❌ | Bir vaqtda 2+ yangi mahsulot chiqsa, albom qilib yuboradi (10 tadan) |
+| ⚙️ Limitlar | Kunlik va tick limitlari (pastda) |
 | 📱 Profil | Story qaysi biznes profilga joylanishi |
 | 📞 Telefon | Caption'dagi telefon raqami |
 | 📢 Kanallar | Kanal qo'shish (`@username` yoki `-100...`), o'chirish, faol/nofaol qilish |
 | 🛒 Buyurtma havolasi | "🛒 Buyurtma berish" tugmasi havolasi |
 | 🚀 Hozir joylash | 15 daqiqalik tekshiruvni darhol ishga tushiradi |
+| 🎲 Random joylash | Tasodifiy N ta mahsulotni tanlab joylash (pastda) |
 | 📊 Bugungi hisobot | Bugungi statistika |
 
 Standart holat: kanalga yuborish (yangi va chegirma) yoqilgan; story'lar, random albom va albom rejimi o'chiq.
 
-**SKU bo'yicha joylash:** botga SKU yozing (masalan `670897`). Bot mahsulot ko'rinishini (preview) yuboradi: "✅ Kanalga joylash" / "📱 Story" / "❌ Bekor".
+### ⚙️ Limitlar
+
+Tugmani bosing va yangi sonni yozing. Qiymat bazada saqlanadi; noto'g'ri son yozilsa bot xato aytib, qayta so'raydi. Joriy qiymat tugma matnida ko'rinadi.
+
+| Limit | Standart | Oraliq |
+|---|---|---|
+| 📱 Story kunlik limiti (yangi mahsulotlar) | 20 | 0–100 |
+| 🔥 Chegirma story kunlik limiti | 5 | 0–100 |
+| 🎲 Random albomdagi mahsulotlar | 8 | 2–10 |
+| 📤 Bir tick'da max post | 10 | 1–50 |
+| 🔁 Random takrorlanmaslik (kun) | 7 | 0–60 |
+
+### SKU bilan qo'lda joylash
+
+Botga SKU yozing — bitta (`670899`) yoki bir nechta, vergul yoki probel bilan (`670899, 670868 670870`, 30 tagacha). Bot mahsulotlarni BITO'dan topib, kanalda qanday ko'rinishini ko'rsatadi (bir nechta bo'lsa — albom, 10 tadan) va tugmalar beradi:
+
+- **📢 Kanalga joylash** — faol kanallarga (2+ bo'lsa albom + "🛒 Buyurtma berish" xabari)
+- **📱 Story** — har bir mahsulot uchun story
+- **📢+📱 Ikkalasi**
+- **🧪 Test (faqat menga)** — xuddi kanaldagidek (rasm + caption + "Buyurtma" tugmasi), lekin faqat sizga yuboriladi
+- **❌ Bekor**
+
+Qo'lda joylash takror tekshiruvini chetlab o'tadi (avval yuborilgan bo'lsa ham joylanadi, faqat eslatma chiqadi). Rasmsiz yoki narxsiz mahsulot joylanmaydi — bot ogohlantiradi. Topilmagan SKU'lar ham ro'yxatda ko'rsatiladi.
+
+### 🎲 Random joylash
+
+Tugmani bosing → bot "Nechta mahsulot? (1-30)" deb so'raydi → son yozing. Bot filtrdan o'tgan (rasmli, narxli, qoldig'i bor, oxirgi `Random takrorlanmaslik` kunida random'da chiqmagan) tasodifiy mahsulotlarni tanlab, albom ko'rinishida preview qiladi (10 tadan ko'p bo'lsa 10 talik albomlarga bo'linadi). Tugmalar: **📢 Kanalga joylash**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (boshqa mahsulotlar), **❌ Bekor**.
 
 ## Avtomatik joylash qanday ishlaydi
 
@@ -109,7 +142,7 @@ Standart holat: kanalga yuborish (yangi va chegirma) yoqilgan; story'lar, random
    - mahsulotda `discount_ids` paydo bo'lgan (yoki o'zgargan) va bu chegirma avval qayd etilmagan.
 
    "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (`DISCOUNT_STORY_DAILY_LIMIT` gacha, yangi mahsulot limitidan alohida). Bitta mahsulotning bitta chegirmasi uchun faqat bir marta chiqadi. Qoldig'i 0 dan ko'paygan mahsulot uchun "✅ Yana sotuvda" posti (kanalga, "Chegirma → kanal" yoqilgan bo'lsa).
-3. **Navbat.** Kanal navbatidan 10 tagacha mahsulot (har biri 3 soniya oraliq bilan) va story navbati bajariladi. Bitta tick 280 soniyadan oshmaydi — ulgurmagani keyingi tick'ka qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi; baribir bo'lmasa navbatga qaytariladi. Bir vaqtda ikkita tick ishlamaydi.
+3. **Navbat.** Kanal navbatidan "Bir tick'da max post" (standart 10) tagacha mahsulot (har biri 3 soniya oraliq bilan) va story navbati bajariladi. Bitta tick 280 soniyadan oshmaydi — ulgurmagani keyingi tick'ka qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi; baribir bo'lmasa navbatga qaytariladi. Bir vaqtda ikkita tick ishlamaydi.
 
 Chegirma caption'i:
 
@@ -126,7 +159,7 @@ Telegram'da eski narx (`25 000`) ustidan chizilgan holda ko'rinadi. Eski narx no
 
 ### Har kuni 16:00 Toshkent — `/api/cron/daily`
 
-- **Random albom** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor 8 ta tasodifiy mahsulot tanlanadi va har bir faol kanalga **bitta albom** (har rasmda o'z caption'i) qilib yuboriladi, keyin "🛒 Buyurtma berish" tugmali qisqa xabar. Oxirgi 7 kunda random albomda chiqqan mahsulotlar qaytarilmaydi. Kuniga bir marta.
+- **Random albom** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga **bitta albom** (har rasmda o'z caption'i) qilib yuboriladi, keyin "🛒 Buyurtma berish" tugmali qisqa xabar. Oxirgi 7 kunda (sozlanadi) random albomda chiqqan mahsulotlar qaytarilmaydi. Kuniga bir marta.
 - **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, random albom, navbatda qolganlar.
 
 ## Caption
