@@ -40,6 +40,7 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `RESTOCK_DEDUP_DAYS` | yo'q | Bitta mahsulot "🔄 Qayta keldi" bo'lib necha kunda ko'pi bilan 1 marta chiqadi, standart `7`. Admin panelda o'zgartiriladi |
 | `GEMINI_API_KEY` | yo'q | "🤖 AI tavsif" uchun Google Gemini API kaliti (aistudio.google.com/apikey). Bo'lmasa postlar tavsifsiz |
 | `GEMINI_MODEL` | yo'q | Gemini modeli, standart `gemini-3.8-flash` |
+| `GEMINI_TIMEOUT_MS` | yo'q | Bitta Gemini so'rovini kutish vaqti (ms), standart `45000` |
 | `RESTOCK_MIN_STOCK` | yo'q | "🔄 Qayta keldi" posti uchun kamida qoldiq, standart `1`. Admin panelda o'zgartiriladi |
 | `RESTOCK_NIGHT` | yo'q | `false` — qayta kelganlar 23:00–08:00 da ertalabgacha kutadi (standart: kechasi ham chiqadi) |
 | `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
@@ -309,7 +310,7 @@ Admin panel → **🤖 AI tavsif**:
 - **📢 Kanalga**, **👥 Guruhga** ("✅ Qayta keldi" va "🆕 Yangi mahsulot → guruh"), **📱 Istoriyaga** — har biri alohida ✅/❌;
 - **🧪 AI sinash** — oxirgi rasmli mahsulot uchun tavsif yozdirib, kalit ishlashini va javob vaqtini ko'rsatadi (xato bo'lsa Google'ning xato matni).
 
-**Gemini band bo'lsa** (503 "high demand", 429, 500): bot 2 va 5 soniyadan keyin yana uradi; baribir band bo'lsa post tavsifsiz chiqadi, mahsulot 10 daqiqa kutadi (boshqa xatolarda 1 soat). Tavsifsiz chiqqan kanal va guruh postlari eslab qolinadi: keyingi tekshiruvlarda tavsif yozilib, **o'sha post tahrirlanadi** ("📝" qo'shiladi, buyurtma tugmasi saqlanadi; 2 kungacha). Istoriyani Telegram tahrirlashga ruxsat bermaydi. "🤖 AI tavsif" oynasida: bugun yozilgan / xato / o'tkazilgan, keyin qo'shilgan postlar, kutayotganlar va oxirgi urinish (Google xatosi bilan).
+**Gemini band yoki sekin bo'lsa** (503 "high demand", 429, 500 yoki 45 soniyada javob bermasa — Gemini 3 modellari javobdan oldin "o'ylaydi"): 503/429/500 da bot 2 va 5 soniyadan keyin yana uradi; baribir bo'lmasa post tavsifsiz chiqadi, mahsulot 10 daqiqa kutadi (boshqa xatolarda 1 soat). Kutish vaqti `GEMINI_TIMEOUT_MS` bilan o'zgaradi (standart 45000). Tavsifsiz chiqqan kanal va guruh postlari eslab qolinadi: keyingi tekshiruvlarda tavsif yozilib, **o'sha post tahrirlanadi** ("📝" qo'shiladi, buyurtma tugmasi saqlanadi; 2 kungacha). Istoriyani Telegram tahrirlashga ruxsat bermaydi. "🤖 AI tavsif" oynasida: bugun yozilgan / xato / o'tkazilgan, keyin qo'shilgan postlar, kutayotganlar va oxirgi urinish (Google xatosi bilan).
 
 `/tavsif 667142` (admin chatida) — mahsulot posti tavsif bilan, tugmalar: **🔄 AI qayta yozsin**, **✏️ O'zim yozaman**, **🗑 O'chirish**. SKU preview'da ham tavsif ko'rinadi. Kunlik hisobotda: "🤖 AI tavsif: N ta yozildi".
 
