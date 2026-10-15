@@ -204,7 +204,7 @@ Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun
 
 1. **Yangi mahsulotlar.** Oxirgi tekshiruvdan beri BITO'ga qo'shilgan mahsulotlar olinadi (vaqt bazada `last_checked_at` sifatida saqlanadi; birinchi ishga tushishda faqat oxirgi 15 daqiqa). O'tkazib yuboriladiganlar: rasmsiz, narxsiz (narx yo'q yoki 0), qoldig'i 0 (barcha filiallar yig'indisi), takror (shu SKU avval boshqa mahsulot bilan yuborilgan). Narxi, rasmi yoki qoldig'i keyinroq kiritilgan mahsulotlar 2 soat davomida qayta tekshiriladi, shuning uchun ular ham chiqadi. Hech bir mahsulot ikki marta joylanmaydi.
    - "Yangi mahsulot → kanal" yoqilgan bo'lsa — har biri alohida post (albom rejimida 2+ bo'lsa — albom).
-   - **"🆕 Yangi mahsulot → guruh"** (admin panel, standart ❌): tanlangan guruhga har bir yangi mahsulot — rasm, nomi, SKU, narx, qoldiq, kategoriya va holati: "✅ Kanalga navbatga qo'yildi" yoki "⚠️ Kanalga chiqmadi: rasmsiz / narxsiz / qoldig'i 0" (xodimlar nimani to'ldirish kerakligini ko'radi). Har mahsulot bir marta. Guruh tanlanganda bot unga sinov xabarini yozadi. Kanal "🆕 Yangi mahsulot → kanal" bilan alohida boshqariladi.
+   - **"🆕 Yangi mahsulot → guruh"** (admin panel, standart ❌): tanlangan guruhga kanaldagi bilan bir xil mijoz posti — "🆕 Yangi mahsulot!", rasm, nomi, narx, telefon va "🛒 Buyurtma berish" tugmasi. Faqat mijozga yaroqli mahsulotlar (rasmi, narxi, qoldig'i bor), har biri bir marta. Guruh tanlanganda bot unga sinov xabarini yozadi. Kanal "🆕 Yangi mahsulot → kanal" bilan alohida boshqariladi.
    - "Yangi mahsulot → story" yoqilgan bo'lsa — har biri uchun story, kunlik limitgacha. Limitdan oshganlari navbatda qoladi va ertasi kuni chiqadi.
 2. **Chegirma.** Bot kuzatayotgan oxirgi 200 ta mahsulot tekshiriladi (har tick'da 50 tadan, navbat bilan — 200 tasi taxminan soatda bir aylanadi). Chegirma ikki yo'l bilan aniqlanadi:
    - narx ro'yxatidagi narx avval saqlangan narxdan kamaygan;
@@ -389,7 +389,9 @@ Bot guruhda o'z xabarlarini o'chira oladi; admin qilinsa yanada ishonchli.
 📅 Tugagan sana: dd.mm.yyyy HH:MM
 ```
 
-0 dan ko'paysa — "✅ QAYTA KELDI" (rasm, nomi, SKU, narx, yangi qoldiq, sana). Har o'zgarish bir marta.
+0 dan ko'paysa — "✅ Qayta keldi xabarlari" guruhiga **mijozlar uchun post**, kanaldagi bilan bir xil: "🔄 Yana sotuvda!", rasm, nomi, mijoz to'laydigan narx (chegirmada eski narx usti chizilgan), kam qolsa "⏳ Cheklangan miqdorda", telefon va "🛒 Buyurtma berish" tugmasi. Har o'zgarish bir marta.
+
+Xodimlar formati (SKU, qoldiq, sana) faqat "❌ TUGADI" xabarlari, tugaganlar hisoboti va guruh buyruqlarida (/tugagan, /kam, /bugun, /sku) qoladi; mijozlar ko'radigan hamma narsa (kanal, istoriya, "✅ Qayta keldi" va "🆕 Yangi mahsulot" guruhlari) mijoz formatida.
 
 **Guruh buyruqlari** ("💬 Guruh buyruqlari" ✅, faqat tanlangan guruhda, guruhning istalgan a'zosi):
 
