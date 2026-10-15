@@ -204,6 +204,7 @@ Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun
 
 1. **Yangi mahsulotlar.** Oxirgi tekshiruvdan beri BITO'ga qo'shilgan mahsulotlar olinadi (vaqt bazada `last_checked_at` sifatida saqlanadi; birinchi ishga tushishda faqat oxirgi 15 daqiqa). O'tkazib yuboriladiganlar: rasmsiz, narxsiz (narx yo'q yoki 0), qoldig'i 0 (barcha filiallar yig'indisi), takror (shu SKU avval boshqa mahsulot bilan yuborilgan). Narxi, rasmi yoki qoldig'i keyinroq kiritilgan mahsulotlar 2 soat davomida qayta tekshiriladi, shuning uchun ular ham chiqadi. Hech bir mahsulot ikki marta joylanmaydi.
    - "Yangi mahsulot → kanal" yoqilgan bo'lsa — har biri alohida post (albom rejimida 2+ bo'lsa — albom).
+   - **"🆕 Yangi mahsulot → guruh"** (admin panel, standart ❌): tanlangan guruhga har bir yangi mahsulot — rasm, nomi, SKU, narx, qoldiq, kategoriya va holati: "✅ Kanalga navbatga qo'yildi" yoki "⚠️ Kanalga chiqmadi: rasmsiz / narxsiz / qoldig'i 0" (xodimlar nimani to'ldirish kerakligini ko'radi). Har mahsulot bir marta. Guruh tanlanganda bot unga sinov xabarini yozadi. Kanal "🆕 Yangi mahsulot → kanal" bilan alohida boshqariladi.
    - "Yangi mahsulot → story" yoqilgan bo'lsa — har biri uchun story, kunlik limitgacha. Limitdan oshganlari navbatda qoladi va ertasi kuni chiqadi.
 2. **Chegirma.** Bot kuzatayotgan oxirgi 200 ta mahsulot tekshiriladi (har tick'da 50 tadan, navbat bilan — 200 tasi taxminan soatda bir aylanadi). Chegirma ikki yo'l bilan aniqlanadi:
    - narx ro'yxatidagi narx avval saqlangan narxdan kamaygan;
