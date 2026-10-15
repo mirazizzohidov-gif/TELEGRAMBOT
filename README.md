@@ -294,7 +294,7 @@ Har bir post turining o'z sarlavhasi bor (mijoz adashmasligi uchun 🔥 faqat ch
 | Qayta keldi + chegirma | 🔄 **Yana sotuvda!** — eski narx usti chizilgan |
 | Random / qo'lda SKU | sarlavhasiz |
 
-Qoldiq "⚠️ Kam qoldi" chegarasidan (⚙️ Limitlar, standart 3) oshmasa narx ostida **"⏳ Cheklangan miqdorda — 2 dona qoldi"** qatori qo'shiladi (kanal posti, story va preview'da).
+Qoldiq "⚠️ Kam qoldi" chegarasidan (⚙️ Limitlar, standart 3) oshmasa narx ostida **"⏳ Cheklangan miqdorda"** qatori (necha dona qolgani yozilmaydi) qo'shiladi (kanal posti, story va preview'da).
 
 ### 🔔 Kelganda xabar ber (mijozlar uchun)
 
