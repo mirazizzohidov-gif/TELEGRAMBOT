@@ -1,5 +1,5 @@
 import { checkSecret } from '../lib/request.js';
-import { getSettings, hasRedis, listBiz, storyState } from '../lib/store.js';
+import { getSettings, getStoryLast, hasRedis, listBiz, storyState } from '../lib/store.js';
 import { tg } from '../lib/telegram.js';
 
 // Business connections are saved by the webhook. Without Redis, falls back to getUpdates
@@ -16,8 +16,9 @@ export default async function handler(req, res) {
   try {
     if (hasRedis()) {
       // story: whether stories go to this profile and why not (ok / off / disabled / no_rights).
-      const settings = await getSettings();
-      const connections = (await listBiz()).map((c) => ({ ...c, story: storyState(settings, c) }));
+      // last_story: the last story result for this profile ({ at, sku, ok, queued, error } — Telegram's description).
+      const [settings, last] = await Promise.all([getSettings(), getStoryLast()]);
+      const connections = (await listBiz()).map((c) => ({ ...c, story: storyState(settings, c), last_story: last[c.id] || null }));
       return res.status(200).json({ ok: true, source: 'database', connections });
     }
     const updates = await tg('getUpdates', { allowed_updates: ['business_connection'] });

@@ -189,7 +189,9 @@ Har bir mahsulot uchun alohida story — **har bir belgilangan biznes profilga**
 - avtomatik story'lar (yangi mahsulot, chegirma) uchun adminga har mahsulot bo'yicha: `SKU 1234 — 📸 Istoriya: @Mixpodarok0307 ✅, @Shtabfoto ❌ <sabab>` (bir xil xato bir profil uchun soatiga bir marta) va 💡 maslahat;
 - story navbati tick'da **ombor tekshiruvidan oldin** bajariladi, bitta mahsulot barcha profillarga birga yuboriladi: vaqt yetmasa mahsulot butunligicha keyingi tick'ka qoladi (bir profilga chiqib, boshqasiga jim qolib ketmaydi).
 
-Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun `story` maydonini qaytaradi: `ok` / `off` (admin o'chirgan) / `disabled` / `no_rights`. Preview tugmasida nechta profilga ketishi ko'rinadi: "📱 Story (2 profil)". Bosh menyuda: "📱 Bugun story: @a 3/20, @b 2/20".
+Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun `story` maydonini qaytaradi: `ok` / `off` (admin o'chirgan) / `disabled` / `no_rights`, va `last_story` — shu profilga oxirgi istoriya natijasi (`{ at, sku, ok, queued, error }`, `error` — Telegram'ning aniq javobi).
+
+"📸 Istoriya profillari"da har profil ostida oxirgi natija: `oxirgi: 15.10.2026 17:37 SKU 1061 ❌ Bad Request: BUSINESS_PEER_INVALID` (yoki ✅ / ⏳ sabab) va navbatda nechta istoriya kutayotgani. Avtomatik hisobotda kutishda qolgan profil ham ko'rsatiladi (`@Shtabfoto ⏳ kunlik limit 20`), ya'ni hech bir profil jim qolib ketmaydi. Preview tugmasida nechta profilga ketishi ko'rinadi: "📱 Story (2 profil)". Bosh menyuda: "📱 Bugun story: @a 3/20, @b 2/20".
 
 **Story xatolari.** Jim xato bo'lmaydi: Telegram story'ni qabul qilmasa (ruxsat yo'q, biznes ulanish o'chgan, akkaunt story limiti tugagan, Premium kerak va h.k.), qaysi profilda ekani, Telegram'ning aniq xato matni (`description`) va maslahat adminga yuboriladi hamda `console.error` bilan logga yoziladi (Vercel → Logs). Avtomatik joylashda bir profildagi bir xil xato soatiga bir martadan ko'p yuborilmaydi. Bunday xatoda o'sha profilning story'lari yo'qolmaydi — navbatda qoladi va muammo hal bo'lgach chiqadi; boshqa profillar ishlashda davom etadi.
 
