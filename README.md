@@ -309,6 +309,8 @@ Admin panel → **🤖 AI tavsif**:
 - **📢 Kanalga**, **👥 Guruhga** ("✅ Qayta keldi" va "🆕 Yangi mahsulot → guruh"), **📱 Istoriyaga** — har biri alohida ✅/❌;
 - **🧪 AI sinash** — oxirgi rasmli mahsulot uchun tavsif yozdirib, kalit ishlashini va javob vaqtini ko'rsatadi (xato bo'lsa Google'ning xato matni).
 
+**Gemini band bo'lsa** (503 "high demand", 429, 500): bot 2 va 5 soniyadan keyin yana uradi; baribir band bo'lsa post tavsifsiz chiqadi, mahsulot 10 daqiqa kutadi (boshqa xatolarda 1 soat). Tavsifsiz chiqqan kanal va guruh postlari eslab qolinadi: keyingi tekshiruvlarda tavsif yozilib, **o'sha post tahrirlanadi** ("📝" qo'shiladi, buyurtma tugmasi saqlanadi; 2 kungacha). Istoriyani Telegram tahrirlashga ruxsat bermaydi. "🤖 AI tavsif" oynasida: bugun yozilgan / xato / o'tkazilgan, keyin qo'shilgan postlar, kutayotganlar va oxirgi urinish (Google xatosi bilan).
+
 `/tavsif 667142` (admin chatida) — mahsulot posti tavsif bilan, tugmalar: **🔄 AI qayta yozsin**, **✏️ O'zim yozaman**, **🗑 O'chirish**. SKU preview'da ham tavsif ko'rinadi. Kunlik hisobotda: "🤖 AI tavsif: N ta yozildi".
 
 ### 🔔 Kelganda xabar ber (mijozlar uchun)
