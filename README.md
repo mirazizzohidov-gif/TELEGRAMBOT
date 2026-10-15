@@ -38,6 +38,8 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `LOW_STOCK_THRESHOLD` | yo'q | "Kam qoldi" chegarasi (dona), standart `3`. Admin panelda o'zgartiriladi |
 | `RESTOCK_POST` | yo'q | `false` — "🔄 Qayta keldi" avtopostining standart holati o'chiq (standart yoqilgan). Admin panelda o'zgartiriladi |
 | `RESTOCK_DEDUP_DAYS` | yo'q | Bitta mahsulot "🔄 Qayta keldi" bo'lib necha kunda ko'pi bilan 1 marta chiqadi, standart `7`. Admin panelda o'zgartiriladi |
+| `RESTOCK_MIN_STOCK` | yo'q | "🔄 Qayta keldi" posti uchun kamida qoldiq, standart `1`. Admin panelda o'zgartiriladi |
+| `RESTOCK_NIGHT` | yo'q | `false` — qayta kelganlar 23:00–08:00 da ertalabgacha kutadi (standart: kechasi ham chiqadi) |
 | `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
 | `STOCK_SCAN_PAGES` | yo'q | Katalog o'tishida bir tick'da ko'pi bilan o'qiladigan sahifalar (200 tadan), standart `40` (vaqt chegarasi bilan) |
 | `DISCOUNT_SCAN_LIMIT` | yo'q | Kategoriya / barcha kategoriyalar chegirmasida e'lon qilinadigan mahsulotlar soni (BITO'ga kam so'rov). Standart `30` |
@@ -145,6 +147,7 @@ Tugmani bosing va yangi sonni yozing. Qiymat bazada saqlanadi; noto'g'ri son yoz
 | 🔁 Random takrorlanmaslik (kun) | 7 | 0–60 |
 | 🔄 Qayta keldi: takrorlanmaslik (kun) | 7 | 1–60 |
 | 🔄 Qayta keldi: bir tick'da max | 5 | 1–50 |
+| 🔄 Qayta keldi: kamida qoldiq (dona) | 1 | 1–1000 |
 
 ### SKU bilan qo'lda joylash
 
@@ -280,6 +283,14 @@ Eslatma: `cash` chegirmasi narxdan katta bo'lsa yangi narx 0 bo'ladi va mahsulot
 
 Kanal postlari ostida "🛒 Buyurtma berish" tugmasi bo'ladi.
 
+### 🔔 Kelganda xabar ber (mijozlar uchun)
+
+Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot rasm, narx (chegirma bilan) va bor-yo'qligini ko'rsatadi (5 tagacha). Mahsulot hozir yo'q bo'lsa **"🔔 Kelganda xabar ber"** tugmasi chiqadi. Mahsulot qayta kelishi bilan (skaner 0 → >0 ni ko'rganda, avtopost yoqilgan-yoqilmaganidan qat'i nazar) bot har bir kutayotgan mijozga shaxsan yozadi: "🔔 Siz kutgan mahsulot keldi!", narx, qoldiq va "🛒 Buyurtma berish" tugmasi; obuna shu bilan tugaydi.
+
+- `/kutish` — mijozning kutayotganlari, har birini "❌" bilan bekor qilish mumkin; bir mijoz 20 tagacha kuta oladi, obuna 90 kun saqlanadi.
+- Havola: `https://t.me/<bot>?start=w_<product_id>` — to'g'ridan-to'g'ri mahsulot kartochkasini ochadi.
+- Kunlik hisobotda: "🔔 Kelganda xabar ber: bugun N obuna, M kishiga xabar, kutayotganlar K".
+
 ### 🔄 Qayta keldi — avtopost
 
 Ombor skaneri ("📦 Ombor guruhi" tanlangan bo'lishi kerak) mahsulot qoldig'i 0 → >0 ga o'tganini ko'rsa (guruhdagi "✅ QAYTA KELDI" xabari bilan bir vaqtda), mahsulot "🔄 Qayta keldi" navbatiga tushadi va har bir faol kanalga post hamda barcha belgilangan business profillarga story (1080×1920) qo'yiladi:
@@ -297,7 +308,9 @@ Qoidalar:
 - **Faqat haqiqiy o'tish:** mahsulot oldin skanerda 0 deb yozilgan bo'lishi va katalog kamida bir marta to'liq tekshirilgan bo'lishi kerak. Birinchi to'liq tekshiruv (tarix yo'q), kategoriya bosilganda BITO'dan qayta o'qish, qidiruv va `/sku` kartochkasi hech narsa post qilmaydi.
 - **Takrorlanmaslik:** bitta mahsulot 7 kunda (⚙️ Limitlar, 1–60) ko'pi bilan 1 marta — Redis kaliti `bito:flag:restock:<product_id>`.
 - **Bir tick'da ko'pi bilan 5 ta** (⚙️ Limitlar, 1–50), eng avval qaytganlari birinchi; qolganlari navbatda keyingi tick'larni kutadi. Navbat soni admin panel boshida: "Navbatda: … qayta keldi N".
-- **Kechasi 23:00–08:00 (Toshkent)** hech narsa chiqmaydi — navbatda turadi va 08:00 dan keyin chiqadi.
+- **Kechasi ham chiqadi** ("🌙 Qayta kelganlar kechasi ham: ✅", standart). ❌ qilinsa, 23:00–08:00 (Toshkent) navbatda turadi va 08:00 dan keyin chiqadi.
+- **Kamida qoldiq** (⚙️ Limitlar, standart 1): qoldiq shundan kam bo'lsa post qilinmaydi va adminga aytiladi (`o'tkazib yuborildi (qoldiq 2 < 3)`). Standart 1 — har qanday qayta kelgan mahsulot kanalga va istoriyaga chiqadi.
+- Skaner "📦 Ombor guruhi" tanlanmagan bo'lsa ham ishlaydi (avtopost yoki kutayotgan mijoz bo'lsa) — guruhga xabarlar esa faqat guruh tanlanganda.
 - Joylashdan oldin mahsulot BITO'dan yangidan olinadi: qoldig'i yana 0 bo'lsa, rasmsiz yoki narxsiz bo'lsa — o'tkazib yuboriladi (mavjud qoida bo'yicha) va adminga aytiladi.
 - Story'lar mavjud kunlik story limitiga bo'ysunadi; limitdan oshgani story navbatida qoladi va keyinroq chiqadi.
 - "🔄 Qayta kelganlarni avtopost: ❌" bo'lsa navbat tozalanadi va hech narsa navbatga tushmaydi.
