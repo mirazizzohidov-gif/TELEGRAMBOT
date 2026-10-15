@@ -1,4 +1,6 @@
 import { ADMIN_COMMANDS } from '../lib/admin.js';
+import { GROUP_COMMANDS } from '../lib/stock.js';
+import { getSettingsSafe } from '../lib/store.js';
 import { checkSecret } from '../lib/request.js';
 import { tg } from '../lib/telegram.js';
 import { adminIds } from '../lib/util.js';
@@ -35,9 +37,19 @@ export default async function handler(req, res) {
     await tg('setWebhook', {
       url,
       secret_token: webhookSecretToken(),
-      allowed_updates: ['message', 'callback_query', 'business_connection'],
+      allowed_updates: ['message', 'callback_query', 'business_connection', 'my_chat_member'],
     });
     const commands = await setupAdminCommands();
+    // Stock group commands (/tugagan, /kam, /bugun, /sku) in the selected group.
+    const settings = await getSettingsSafe();
+    if (settings.stock_group) {
+      try {
+        await tg('setMyCommands', { commands: GROUP_COMMANDS, scope: { type: 'chat', chat_id: settings.stock_group } });
+        commands.push({ group: settings.stock_group, ok: true });
+      } catch (err) {
+        commands.push({ group: settings.stock_group, ok: false, error: err.message });
+      }
+    }
     const info = await tg('getWebhookInfo');
     return res.status(200).json({ ok: true, url, info, commands });
   } catch (err) {

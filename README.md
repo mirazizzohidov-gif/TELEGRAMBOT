@@ -35,6 +35,8 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `BITO_CACHE_TTL` | yo'q | BITO mahsulot/narx/chegirma keshi (soniya). Standart `600` (10 daqiqa), `0` — keshsiz |
 | `BITO_TIMEOUT_MS` | yo'q | BITO so'rovi uchun kutish vaqti (ms). Standart `60000`. Timeout yoki 5xx bo'lsa 2 soniyadan keyin 1 marta qayta uriniladi |
 | `BITO_DISCOUNT_PATH` | yo'q | Chegirmalar endpointi. Standart `/discount/get-all` (ishlamasa `/discount/get-paging`) |
+| `LOW_STOCK_THRESHOLD` | yo'q | "Kam qoldi" chegarasi (dona), standart `3`. Admin panelda o'zgartiriladi |
+| `STOCK_SCAN_PAGES` | yo'q | Kunlik katalog o'tishida bir tick'da o'qiladigan sahifalar (30 tadan), standart `8` |
 | `DISCOUNT_SCAN_LIMIT` | yo'q | Kategoriya / barcha kategoriyalar chegirmasida e'lon qilinadigan mahsulotlar soni (BITO'ga kam so'rov). Standart `30` |
 | `BITO_PRODUCT_BY_ID_PATH` | yo'q | Mahsulotni ID bo'yicha olish uchun qo'shimcha endpoint (POST `{id}`), avval shu sinaladi. Odatda kerak emas |
 | `DISCOUNT_CASH_MODE` | yo'q | `apply_type: cash` chegirma ma'nosi: `subtract` (standart) — narx − value; `final` — value yangi narxning o'zi |
@@ -295,6 +297,40 @@ curl -X POST https://<loyiha>.vercel.app/api/send \
 | `405` | Noto'g'ri HTTP metod |
 | `500` | Env o'zgaruvchilari yetishmaydi yoki ichki xato |
 | `502` | Telegram yoki BITO xato qaytardi, yoki rasmni qayta ishlab bo'lmadi |
+
+## 📦 Ombor guruhi (tugagan mahsulotlar)
+
+Bot qo'shilgan guruhlarni o'zi eslab qoladi (adminlarga "📦 Bot guruhga qo'shildi" xabari keladi). Admin panel → **📦 Ombor guruhi**: guruhni tanlang va funksiyalarni ✅/❌ qiling. Guruh tanlanganda bot unga buyruqlarni o'rnatadi va pastda doimiy tugmalar chiqaradi. Hamma xabarlar mahsulot **rasmi** bilan.
+
+**Qoldiq tarixi.** Bot har tick'da so'nggi o'zgargan mahsulotlarni (`sort: -updated_at`, 2 sahifa), o'zi joylagan mahsulotlarni va kuniga bir marta butun katalogni (bir necha tick'ga bo'lib, Redis kursor bilan) ko'radi va qoldiqni saqlaydi. Qoldiq > 0 dan 0 ga tushgan vaqt — "tugagan sana" (Toshkent vaqti). Bot kuzatishni boshlashdan oldin tugaganlar uchun BITO `updated_at` taxminiy sana sifatida ko'rsatiladi: `~14.10.2026`.
+
+**Darhol xabar** ("🔔 Darhol xabar" ✅): qoldiq 0 ga tushsa —
+
+```
+❌ TUGADI
+🛍 <nomi>
+🔢 SKU: <sku>
+💰 Narxi: <narx> so'm
+📦 Qoldiq: 0
+📅 Tugagan sana: dd.mm.yyyy HH:MM
+```
+
+0 dan ko'paysa — "✅ QAYTA KELDI" (rasm, nomi, SKU, narx, yangi qoldiq, sana). Har o'zgarish bir marta.
+
+**Guruh buyruqlari** ("💬 Guruh buyruqlari" ✅, faqat tanlangan guruhda, guruhning istalgan a'zosi):
+
+| Buyruq / tugma | Natija |
+|---|---|
+| `/tugagan` · ❌ Tugaganlar | Qoldig'i 0 mahsulotlar — 10 talik albomlar, har rasmda nomi, SKU, narx, "📦 Qoldiq: 0", "📅 Tugagan sana"; "➡️ Keyingi" bilan sahifalab |
+| `/kam` · ⚠️ Kam qolganlar | Qoldig'i chegaradan (standart 3) kam yoki BITO'dagi `red_line` / `yellow_line` dan past mahsulotlar |
+| `/bugun` · 📅 Bugun tugaganlar | Bugun tugagan va qayta kelganlar |
+| `/sku 3147` · 🔎 SKU qidirish | Mahsulot kartochkasi (rasm, nomi, narx, qoldiq, 0 bo'lsa tugagan sana) |
+
+Privacy mode yoqilgan bo'lsa ham buyruqlar va "🔎 SKU qidirish" (botga javob orqali) ishlaydi. Pastdagi tugmalar oddiy matn yuboradi — ular ishlashi uchun botni guruhda **admin** qiling (yoki @BotFather → /setprivacy → Disable). Admin panel bu haqda ogohlantiradi.
+
+**Kunlik ro'yxat** ("📋 Kunlik ro'yxat" ✅, standart 09:00 Toshkent, admin panelda o'zgartiriladi): "📋 Bugungi hisobot: tugagan N ta, kam qolgan M ta" va tugaganlar rasm bilan albomda (30 tagacha, qolgani `/tugagan`). "📤 Hisobotni hozir yuborish" tugmasi — darhol.
+
+`/api/setup-webhook` ni qayta chaqiring — `my_chat_member` update'lari va guruh buyruqlari o'rnatiladi.
 
 ## Tezlik va javob
 
