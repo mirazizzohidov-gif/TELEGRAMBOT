@@ -44,6 +44,12 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `RESTOCK_MIN_STOCK` | yo'q | "🔄 Qayta keldi" posti uchun kamida qoldiq, standart `1`. Admin panelda o'zgartiriladi |
 | `RESTOCK_NIGHT` | yo'q | `false` — qayta kelganlar 23:00–08:00 da ertalabgacha kutadi (standart: kechasi ham chiqadi) |
 | `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
+| `UNSOLD_DAYS` | yo'q | "📉 Sotilmayotganlar": necha kun sotilmagan bo'lsa, standart `60`. Admin panelda o'zgartiriladi |
+| `REORDER_DAYS` | yo'q | "🛒 Buyurtma qilish kerak": qoldiq necha kunga yetsa ro'yxatga tushadi, standart `7`. Admin panelda o'zgartiriladi |
+| `BITO_SALES_PATH` | yo'q | BITO "sotuv mahsulot bo'yicha" hisoboti endpointi. Odatda kerak emas — bot bir necha shaklni sinab, ishlaganini eslab qoladi |
+| `BITO_RESPONSIBLE_ID` | yo'q | Bot buyurtmasini BITO'da ham yaratish (sinov) uchun mas'ul xodim ID si |
+| `BITO_ORDER_STATE` | yo'q | BITO'da yaratiladigan buyurtma holati, standart `new` |
+| `BITO_ORGANIZATION_ID` | yo'q | Mahsulotda filial topilmasa BITO buyurtmasi uchun filial ID si |
 | `STOCK_SCAN_PAGES` | yo'q | Katalog o'tishida bir tick'da ko'pi bilan o'qiladigan sahifalar (200 tadan), standart `40` (vaqt chegarasi bilan) |
 | `DISCOUNT_SCAN_LIMIT` | yo'q | Kategoriya / barcha kategoriyalar chegirmasida e'lon qilinadigan mahsulotlar soni (BITO'ga kam so'rov). Standart `30` |
 | `BITO_PRODUCT_BY_ID_PATH` | yo'q | Mahsulotni ID bo'yicha olish uchun qo'shimcha endpoint (POST `{id}`), avval shu sinaladi. Odatda kerak emas |
@@ -151,6 +157,8 @@ Tugmani bosing va yangi sonni yozing. Qiymat bazada saqlanadi; noto'g'ri son yoz
 | 🔄 Qayta keldi: takrorlanmaslik (kun) | 7 | 1–60 |
 | 🔄 Qayta keldi: bir tick'da max | 5 | 1–50 |
 | 🔄 Qayta keldi: kamida qoldiq (dona) | 1 | 1–1000 |
+| 📉 Sotilmayotgan: necha kun sotilmagan | 60 | 7–365 |
+| 🛒 Buyurtma qilish: qoldiq necha kunga yetsa | 7 | 1–60 |
 
 ### SKU bilan qo'lda joylash
 
@@ -336,6 +344,34 @@ Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot 
 - `/kutish` — mijozning kutayotganlari, har birini "❌" bilan bekor qilish mumkin; bir mijoz 20 tagacha kuta oladi, obuna 90 kun saqlanadi.
 - Havola: `https://t.me/<bot>?start=w_<product_id>` — to'g'ridan-to'g'ri mahsulot kartochkasini ochadi.
 - Kunlik hisobotda: "🔔 Kelganda xabar ber: bugun N obuna, M kishiga xabar, kutayotganlar K".
+
+### 🛒 Bot ichida buyurtma
+
+Postlardagi, kartochkalardagi va "🔔 keldi" xabaridagi **"🛒 Buyurtma berish"** tugmasi botni ochadi (`https://t.me/<bot>?start=o_<product_id>`). Bot so'raydi:
+
+1. **Nechta?** — 1–5 tugmalari yoki "✏️ Boshqa son" (qoldiqdan ko'p bo'lmaydi);
+2. **Telefon** — "📱 Raqamni yuborish" tugmasi yoki yozib;
+3. **Manzil** — matn, "📍 Lokatsiyani yuborish" yoki "🏪 O'zim olib ketaman";
+4. **Tasdiqlash** — jami summa bilan.
+
+Buyurtma (#raqam bilan) admin panel → **🛒 Buyurtmalar** da tanlangan guruhga (yoki adminlarga) "✅ Qabul qilindi / ❌ Bekor qilish" tugmalari bilan keladi; xodim bosganda xabar yangilanadi va mijozga xabar boradi. Mijoz istalgan vaqtda "❌ Bekor qilish" bilan chiqadi. Bot username'ini o'zi aniqlaydi (`getMe`).
+
+- **🛒 Buyurtma bot ichida: ✅/❌** — o'chirilsa tugma avvalgidek menejer havolasini (`order_url`) ochadi.
+- **🧾 BITO'da ham yaratish (sinov)** — yoqilsa bot BITO'da mijozni telefon bo'yicha topadi (yo'q bo'lsa yaratadi) va sale order yaratadi. Vercel'da `BITO_RESPONSIBLE_ID` kerak. Bu BITO API qismi hujjatlanmagan, shuning uchun sinov rejimida: natija yoki BITO xatosi har buyurtma xabarida yoziladi, buyurtma baribir guruhga keladi.
+
+### 🗂 Katalog (mijozlar uchun)
+
+Mijoz botda **🗂 Katalog** tugmasini bosadi (yoki `/katalog`): BITO kategoriyalari (asosiylari, keyin ichki kategoriyalar, masalan "Sovg'alar → Krujka"), qavsda sotuvdagi mahsulotlar soni; bo'sh kategoriyalar ko'rinmaydi. Kategoriya ichida mahsulotlar rasm, narx (chegirma bilan), SKU va "🛒 Buyurtma berish" tugmasi bilan 5 tadan chiqadi ("➡️ Yana").
+
+### 📊 Savdo tahlili (admin panel)
+
+BITO "sotuv — mahsulot bo'yicha" hisobotidan:
+
+- **📉 Sotilmayotganlar** — sotuvda bor, lekin oxirgi N kunda (standart 60) bitta ham sotilmagan mahsulotlar, eng ko'p pul yotganlari birinchi. Ro'yxat ostida mahsulot tanlanadi → chegirma foizi (10/15/20/30%) → oldindan ko'rish → **✅ Kanalga joylash** bilan chegirma posti chiqadi. Kassada ham shu narx bo'lishi uchun BITO'da ham chegirma qo'ying (bot eslatadi).
+- **🛒 Buyurtma qilish kerak** — oxirgi 14 kunda kamida 2 dona sotilgan va qoldig'i shu tezlikda N kundan (standart 7) kamga yetadigan mahsulotlar: qoldiq, kuniga necha dona, necha kunga yetadi. Har kuni ombor ro'yxati vaqtida avtomatik hisobot guruhiga (yoki adminlarga) keladi — **🛒 Har kuni ro'yxat bilan: ✅/❌**.
+- **📈 Haftalik hisobot** — har dushanba adminlarga: hafta sotuvi (so'm, dona), tugagan va qayta kelganlar soni, buyurtma qilish kerak / sotilmayotganlar soni, eng ko'p sotilgan 10 ta, Gemini yoqilgan bo'lsa qisqa AI xulosasi. "📈 Haftalik hisobot (hozir)" bilan istalgan vaqtda.
+
+Hisobot endpointi bir necha shaklda sinaladi va ishlagani eslab qolinadi; topilmasa xato aniq yoziladi va keyingi tick'da qayta urinadi.
 
 ### 🔄 Qayta keldi — avtopost
 
