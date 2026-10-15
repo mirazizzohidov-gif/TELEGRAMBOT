@@ -39,7 +39,7 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `RESTOCK_POST` | yo'q | `false` — "🔄 Qayta keldi" avtopostining standart holati o'chiq (standart yoqilgan). Admin panelda o'zgartiriladi |
 | `RESTOCK_DEDUP_DAYS` | yo'q | Bitta mahsulot "🔄 Qayta keldi" bo'lib necha kunda ko'pi bilan 1 marta chiqadi, standart `7`. Admin panelda o'zgartiriladi |
 | `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
-| `STOCK_SCAN_PAGES` | yo'q | Katalog o'tishida bir tick'da o'qiladigan sahifalar (200 tadan), standart `3` |
+| `STOCK_SCAN_PAGES` | yo'q | Katalog o'tishida bir tick'da ko'pi bilan o'qiladigan sahifalar (200 tadan), standart `40` (vaqt chegarasi bilan) |
 | `DISCOUNT_SCAN_LIMIT` | yo'q | Kategoriya / barcha kategoriyalar chegirmasida e'lon qilinadigan mahsulotlar soni (BITO'ga kam so'rov). Standart `30` |
 | `BITO_PRODUCT_BY_ID_PATH` | yo'q | Mahsulotni ID bo'yicha olish uchun qo'shimcha endpoint (POST `{id}`), avval shu sinaladi. Odatda kerak emas |
 | `DISCOUNT_CASH_MODE` | yo'q | `apply_type: cash` chegirma ma'nosi: `subtract` (standart) — narx − value; `final` — value yangi narxning o'zi |
@@ -340,7 +340,7 @@ curl -X POST https://<loyiha>.vercel.app/api/send \
 
 Bot qo'shilgan guruhlarni o'zi eslab qoladi (adminlarga "📦 Bot guruhga qo'shildi" xabari keladi). Admin panel → **📦 Ombor guruhi**: guruhni tanlang va funksiyalarni ✅/❌ qiling. Guruh tanlanganda bot unga buyruqlarni o'rnatadi va pastda doimiy tugmalar chiqaradi. Hamma xabarlar mahsulot **rasmi** bilan.
 
-**Qoldiq tarixi.** Bot har tick'da so'nggi o'zgargan mahsulotlarni (`sort: -updated_at`, 2 sahifa), o'zi joylagan mahsulotlarni va kuniga bir marta butun katalogni (200 talik sahifalar bilan, bir necha tick'ga bo'lib, Redis kursor bilan) ko'radi va qoldiqni saqlaydi. Qoldiq — barcha omborlar (`organizations[].amount`) yig'indisi; faqat sotiladigan (`is_product`), arxivlanmagan mahsulotlar hisobga olinadi. BITO'dan o'chirilgan mahsulotlar keyingi to'liq o'tishdan keyin ro'yxatdan chiqadi. Qoldiq > 0 dan 0 ga tushgan vaqt — "tugagan sana" (Toshkent vaqti). Bot kuzatishni boshlashdan oldin tugaganlar uchun BITO `updated_at` taxminiy sana sifatida ko'rsatiladi: `~14.10.2026`.
+**Qoldiq tarixi.** Bot har tick'da (15 daqiqa) eng yangi mahsulotlarni (2 sahifa), o'zi joylagan mahsulotlarni va **butun katalogni** (200 talik sahifalar, vaqt yetgancha — odatda ~5600 mahsulot bitta tick'da; ulgurmagani keyingi tick'da Redis kursor bilan davom etadi) ko'radi va qoldiqni saqlaydi. O'tish tugashi bilan keyingisi boshlanadi. BITO mahsulotlarni `updated_at` bo'yicha saralab bermaydi, shuning uchun istalgan mahsulotning tugashi yoki qayta kelishi ("✅ QAYTA KELDI" va "🔄 Qayta keldi" avtoposti) shu tarzda 15–30 daqiqa ichida ko'rinadi. Qoldiq — barcha omborlar (`organizations[].amount`) yig'indisi; faqat sotiladigan (`is_product`), arxivlanmagan mahsulotlar hisobga olinadi. BITO'dan o'chirilgan mahsulotlar keyingi to'liq o'tishdan keyin ro'yxatdan chiqadi. Qoldiq > 0 dan 0 ga tushgan vaqt — "tugagan sana" (Toshkent vaqti). Bot kuzatishni boshlashdan oldin tugaganlar uchun BITO `updated_at` taxminiy sana sifatida ko'rsatiladi: `~14.10.2026`.
 
 **Darhol xabar** ("🔔 Darhol xabar" ✅): qoldiq 0 ga tushsa —
 
