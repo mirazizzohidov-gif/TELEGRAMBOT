@@ -314,6 +314,21 @@ Admin panel → **🤖 AI tavsif**:
 
 `/tavsif 667142` (admin chatida) — mahsulot posti tavsif bilan, tugmalar: **🔄 AI qayta yozsin**, **✏️ O'zim yozaman**, **🗑 O'chirish**. SKU preview'da ham tavsif ko'rinadi. Kunlik hisobotda: "🤖 AI tavsif: N ta yozildi".
 
+### 📷 Rasm va nom bo'yicha qidiruv (Gemini + BITO)
+
+Botga mahsulot **rasmi** yuborilsa, bot uni BITO'dan topadi:
+1. Gemini rasmdagi yozuvni o'qiydi — shtrix-kod, SKU yoki yorliq bo'lsa BITO'dan **aniq** topiladi ("✅ Rasmdagi kod bo'yicha topildi").
+2. Yozuv bo'lmasa — Gemini mahsulotni qidiruv so'zlari bilan yozadi (o'zbekcha va ruscha), bot BITO'dan 12 tagacha nomzod oladi, Gemini rasmni nomzodlarning BITO rasmlari bilan **solishtiradi** va eng o'xshash 3 tasini (o'xshashlik 35% dan yuqori) ko'rsatadi.
+
+| Kim | Qayerda | Nima ko'radi |
+|---|---|---|
+| Xodim | admin chati (rasm yuborish yoki "📷 Rasm bo'yicha qidirish" tugmasi), ombor guruhlari ("📷 Rasm bo'yicha qidirish" tugmasi → rasmni javob qilib yuborish, yoki rasm + `/rasm`) | rasm, nomi, **SKU**, narx, qoldiq (tugagan bo'lsa sanasi), o'xshashlik % |
+| Mijoz | botning shaxsiy chati (rasm yuborish; `/start` da "📷 Rasm bo'yicha qidirish" tugmasi chiqadi) | mijoz kartasi: rasm, narx, **SKU**, bor-yo'qligi, "🛒 Buyurtma berish" yoki "🔔 Kelganda xabar ber"; kuniga 20 ta qidiruv |
+
+**Nom bo'yicha:** admin chatida mahsulot nomi yozilsa (SKU emas) — rasm, nom, SKU, narx, qoldiq bilan 5 tagacha o'xshash mahsulot. Mijoz nom yozsa — kartalar SKU bilan. BITO yozilgandek topmasa, Gemini to'g'ri yozilishi, sinonimlar va o'zbekcha/ruscha variantlarni topadi va "aynan topilmadi — o'xshashlari" chiqadi.
+
+Qidiruv 30–60 soniya olishi mumkin (bot "🔎 Qidiryapman..." deb turadi). Admin panel → 🤖 AI tavsif → **📷 Rasm bo'yicha qidiruv: ✅/❌**. Guruhda rasm ko'rinishi uchun bot admin bo'lishi yoki rasm botning xabariga javob qilib yuborilishi kerak. Kunlik hisobotda: qidiruvlar soni, topilmaganlar, xatolar.
+
 ### 🔔 Kelganda xabar ber (mijozlar uchun)
 
 Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot rasm, narx (chegirma bilan) va bor-yo'qligini ko'rsatadi (5 tagacha). Mahsulot hozir yo'q bo'lsa **"🔔 Kelganda xabar ber"** tugmasi chiqadi. Mahsulot qayta kelishi bilan (skaner 0 → >0 ni ko'rganda, avtopost yoqilgan-yoqilmaganidan qat'i nazar) bot har bir kutayotgan mijozga shaxsan yozadi: "🔔 Siz kutgan mahsulot keldi!", narx, qoldiq va "🛒 Buyurtma berish" tugmasi; obuna shu bilan tugaydi.
