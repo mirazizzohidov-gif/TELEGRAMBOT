@@ -36,6 +36,9 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `BITO_TIMEOUT_MS` | yo'q | BITO so'rovi uchun kutish vaqti (ms). Standart `60000`. Timeout yoki 5xx bo'lsa 2 soniyadan keyin 1 marta qayta uriniladi |
 | `BITO_DISCOUNT_PATH` | yo'q | Chegirmalar endpointi. Standart `/discount/get-all` (ishlamasa `/discount/get-paging`) |
 | `LOW_STOCK_THRESHOLD` | yo'q | "Kam qoldi" chegarasi (dona), standart `3`. Admin panelda o'zgartiriladi |
+| `RESTOCK_POST` | yo'q | `false` — "🔄 Qayta keldi" avtopostining standart holati o'chiq (standart yoqilgan). Admin panelda o'zgartiriladi |
+| `RESTOCK_DEDUP_DAYS` | yo'q | Bitta mahsulot "🔄 Qayta keldi" bo'lib necha kunda ko'pi bilan 1 marta chiqadi, standart `7`. Admin panelda o'zgartiriladi |
+| `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
 | `STOCK_SCAN_PAGES` | yo'q | Katalog o'tishida bir tick'da o'qiladigan sahifalar (200 tadan), standart `3` |
 | `DISCOUNT_SCAN_LIMIT` | yo'q | Kategoriya / barcha kategoriyalar chegirmasida e'lon qilinadigan mahsulotlar soni (BITO'ga kam so'rov). Standart `30` |
 | `BITO_PRODUCT_BY_ID_PATH` | yo'q | Mahsulotni ID bo'yicha olish uchun qo'shimcha endpoint (POST `{id}`), avval shu sinaladi. Odatda kerak emas |
@@ -122,6 +125,7 @@ Admin panel menyusi (`⚙️ Admin panel`):
 | 🛒 Buyurtma havolasi | "🛒 Buyurtma berish" tugmasi havolasi |
 | 🚀 Hozir joylash | 15 daqiqalik tekshiruvni darhol ishga tushiradi |
 | 🎲 Random joylash | Tasodifiy N ta mahsulotni tanlab joylash (pastda) |
+| 🔄 Qayta kelganlarni avtopost | Ombor skaneri qoldiq 0 → >0 ni aniqlaganda kanal posti + story (pastda), standart yoqilgan |
 | 📊 Bugungi hisobot | Bugungi statistika |
 
 Standart holat: kanalga yuborish (yangi va chegirma) yoqilgan; story'lar, random albom va albom rejimi o'chiq.
@@ -139,6 +143,8 @@ Tugmani bosing va yangi sonni yozing. Qiymat bazada saqlanadi; noto'g'ri son yoz
 | 🎲 Random albomdagi mahsulotlar | 8 | 2–10 |
 | 📤 Bir tick'da max post | 10 | 1–50 |
 | 🔁 Random takrorlanmaslik (kun) | 7 | 0–60 |
+| 🔄 Qayta keldi: takrorlanmaslik (kun) | 7 | 1–60 |
+| 🔄 Qayta keldi: bir tick'da max | 5 | 1–50 |
 
 ### SKU bilan qo'lda joylash
 
@@ -190,8 +196,9 @@ Har bir mahsulot uchun alohida story — **har bir belgilangan biznes profilga**
    - narx ro'yxatidagi narx avval saqlangan narxdan kamaygan;
    - mahsulotda `discount_ids` paydo bo'lgan (yoki o'zgargan) va bu chegirma avval qayd etilmagan.
 
-   "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (`DISCOUNT_STORY_DAILY_LIMIT` gacha, yangi mahsulot limitidan alohida). Bitta mahsulotning bitta chegirmasi uchun faqat bir marta chiqadi. Qoldig'i 0 dan ko'paygan mahsulot uchun "✅ Yana sotuvda" posti (kanalga, "Chegirma → kanal" yoqilgan bo'lsa).
-3. **Navbat.** Kanal navbatidan "Bir tick'da max post" (standart 10) tagacha mahsulot (har biri 3 soniya oraliq bilan) va story navbati bajariladi. Bitta tick 280 soniyadan oshmaydi — ulgurmagani keyingi tick'ka qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi; baribir bo'lmasa navbatga qaytariladi. Bir vaqtda ikkita tick ishlamaydi.
+   "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (`DISCOUNT_STORY_DAILY_LIMIT` gacha, yangi mahsulot limitidan alohida). Bitta mahsulotning bitta chegirmasi uchun faqat bir marta chiqadi. Bot joylagan mahsulotning qoldig'i 0 dan ko'paysa "🔄 YANA SOTUVDA!" posti (kanalga, "Chegirma → kanal" yoqilgan bo'lsa) — "🔄 Qayta keldi" avtoposti bilan bir xil takrorlanmaslik qoidasi (N kunda 1 marta), ikki marta chiqmaydi.
+3. **🔄 Qayta keldi** (pastda) — navbatdan bir tick'da ko'pi bilan 5 ta.
+4. **Navbat.** Kanal navbatidan "Bir tick'da max post" (standart 10) tagacha mahsulot (har biri 3 soniya oraliq bilan) va story navbati bajariladi. Bitta tick 280 soniyadan oshmaydi — ulgurmagani keyingi tick'ka qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi; baribir bo'lmasa navbatga qaytariladi. Bir vaqtda ikkita tick ishlamaydi.
 
 Chegirma caption'i:
 
@@ -262,6 +269,29 @@ Eslatma: `cash` chegirmasi narxdan katta bo'lsa yangi narx 0 bo'ladi va mahsulot
 ```
 
 Kanal postlari ostida "🛒 Buyurtma berish" tugmasi bo'ladi.
+
+### 🔄 Qayta keldi — avtopost
+
+Ombor skaneri ("📦 Ombor guruhi" tanlangan bo'lishi kerak) mahsulot qoldig'i 0 → >0 ga o'tganini ko'rsa (guruhdagi "✅ QAYTA KELDI" xabari bilan bir vaqtda), mahsulot "🔄 Qayta keldi" navbatiga tushadi va har bir faol kanalga post hamda barcha belgilangan business profillarga story (1080×1920) qo'yiladi:
+
+```
+🔄 YANA SOTUVDA!
+
+🛍 Mahsulot nomi: Modelcar platik Gelik g63 d704-22
+💰 Narxi: 120 000 → 108 000 so'm      (chegirma bo'lsa eski narx usti chizilgan)
+
+📞 Buyurtma uchun murojaat qiling: +998982000307
+```
+
+Qoidalar:
+- **Faqat haqiqiy o'tish:** mahsulot oldin skanerda 0 deb yozilgan bo'lishi va katalog kamida bir marta to'liq tekshirilgan bo'lishi kerak. Birinchi to'liq tekshiruv (tarix yo'q), kategoriya bosilganda BITO'dan qayta o'qish, qidiruv va `/sku` kartochkasi hech narsa post qilmaydi.
+- **Takrorlanmaslik:** bitta mahsulot 7 kunda (⚙️ Limitlar, 1–60) ko'pi bilan 1 marta — Redis kaliti `bito:flag:restock:<product_id>`.
+- **Bir tick'da ko'pi bilan 5 ta** (⚙️ Limitlar, 1–50), eng avval qaytganlari birinchi; qolganlari navbatda keyingi tick'larni kutadi. Navbat soni admin panel boshida: "Navbatda: … qayta keldi N".
+- **Kechasi 23:00–08:00 (Toshkent)** hech narsa chiqmaydi — navbatda turadi va 08:00 dan keyin chiqadi.
+- Joylashdan oldin mahsulot BITO'dan yangidan olinadi: qoldig'i yana 0 bo'lsa, rasmsiz yoki narxsiz bo'lsa — o'tkazib yuboriladi (mavjud qoida bo'yicha) va adminga aytiladi.
+- Story'lar mavjud kunlik story limitiga bo'ysunadi; limitdan oshgani story navbatida qoladi va keyinroq chiqadi.
+- "🔄 Qayta kelganlarni avtopost: ❌" bo'lsa navbat tozalanadi va hech narsa navbatga tushmaydi.
+- Har tick'dan keyin adminlarga qisqa hisobot: `🔄 Qayta keldi: 668946 — kanal ✅, istoriya 2/2 ✅` (yoki xato / "navbatda" / "o'tkazib yuborildi (rasmsiz)"). Kunlik hisobotda: "🔄 Qayta keldi (ombor): N aniqlandi, M kanalga joylandi".
 
 ## Qo'lda yuborish (`/api/send`, `/api/story`)
 
