@@ -210,7 +210,7 @@ Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun
    - narx ro'yxatidagi narx avval saqlangan narxdan kamaygan;
    - mahsulotda `discount_ids` paydo bo'lgan (yoki o'zgargan) va bu chegirma avval qayd etilmagan.
 
-   "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (`DISCOUNT_STORY_DAILY_LIMIT` gacha, yangi mahsulot limitidan alohida). Bitta mahsulotning bitta chegirmasi uchun faqat bir marta chiqadi. Bot joylagan mahsulotning qoldig'i 0 dan ko'paysa "🔄 YANA SOTUVDA!" posti (kanalga, "Chegirma → kanal" yoqilgan bo'lsa) — "🔄 Qayta keldi" avtoposti bilan bir xil takrorlanmaslik qoidasi (N kunda 1 marta), ikki marta chiqmaydi.
+   "🔥 Chegirma → kanal" yoqilgan bo'lsa kanal posti, "🔥 Chegirma → story" yoqilgan bo'lsa story (`DISCOUNT_STORY_DAILY_LIMIT` gacha, yangi mahsulot limitidan alohida). Bitta mahsulotning bitta chegirmasi uchun faqat bir marta chiqadi. Bot joylagan mahsulotning qoldig'i 0 dan ko'paysa "🔄 Yana sotuvda!" posti (kanalga, "Chegirma → kanal" yoqilgan bo'lsa) — "🔄 Qayta keldi" avtoposti bilan bir xil takrorlanmaslik qoidasi (N kunda 1 marta), ikki marta chiqmaydi.
 3. **🔄 Qayta keldi** (pastda) — navbatdan bir tick'da ko'pi bilan 5 ta.
 4. **Navbat.** Kanal navbatidan "Bir tick'da max post" (standart 10) tagacha mahsulot (har biri 3 soniya oraliq bilan) va story navbati bajariladi. Bitta tick 280 soniyadan oshmaydi — ulgurmagani keyingi tick'ka qoladi. Telegram 429 (`retry_after`) qaytarsa kutib qayta urinadi; baribir bo'lmasa navbatga qaytariladi. Bir vaqtda ikkita tick ishlamaydi.
 
@@ -284,6 +284,18 @@ Eslatma: `cash` chegirmasi narxdan katta bo'lsa yangi narx 0 bo'ladi va mahsulot
 
 Kanal postlari ostida "🛒 Buyurtma berish" tugmasi bo'ladi.
 
+Har bir post turining o'z sarlavhasi bor (mijoz adashmasligi uchun 🔥 faqat chegirmada):
+
+| Holat | Sarlavha |
+|---|---|
+| Yangi mahsulot (BITO'ga yangi qo'shilgan, avtomatik) | 🆕 **Yangi mahsulot!** |
+| Qayta sotuvga chiqdi | 🔄 **Yana sotuvda!** |
+| Chegirma (yangi mahsulot chegirma bilan ham) | 🔥 **CHEGIRMA!** — eski narx usti chizilgan |
+| Qayta keldi + chegirma | 🔄 **Yana sotuvda!** — eski narx usti chizilgan |
+| Random / qo'lda SKU | sarlavhasiz |
+
+Qoldiq "⚠️ Kam qoldi" chegarasidan (⚙️ Limitlar, standart 3) oshmasa narx ostida **"⏳ Cheklangan miqdorda — 2 dona qoldi"** qatori qo'shiladi (kanal posti, story va preview'da).
+
 ### 🔔 Kelganda xabar ber (mijozlar uchun)
 
 Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot rasm, narx (chegirma bilan) va bor-yo'qligini ko'rsatadi (5 tagacha). Mahsulot hozir yo'q bo'lsa **"🔔 Kelganda xabar ber"** tugmasi chiqadi. Mahsulot qayta kelishi bilan (skaner 0 → >0 ni ko'rganda, avtopost yoqilgan-yoqilmaganidan qat'i nazar) bot har bir kutayotgan mijozga shaxsan yozadi: "🔔 Siz kutgan mahsulot keldi!", narx, qoldiq va "🛒 Buyurtma berish" tugmasi; obuna shu bilan tugaydi.
@@ -297,7 +309,7 @@ Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot 
 Ombor skaneri ("📦 Ombor guruhi" tanlangan bo'lishi kerak) mahsulot qoldig'i 0 → >0 ga o'tganini ko'rsa (guruhdagi "✅ QAYTA KELDI" xabari bilan bir vaqtda), mahsulot "🔄 Qayta keldi" navbatiga tushadi va har bir faol kanalga post hamda barcha belgilangan business profillarga story (1080×1920) qo'yiladi:
 
 ```
-🔄 YANA SOTUVDA!
+🔄 Yana sotuvda!
 
 🛍 Mahsulot nomi: Modelcar platik Gelik g63 d704-22
 💰 Narxi: 120 000 → 108 000 so'm      (chegirma bo'lsa eski narx usti chizilgan)
