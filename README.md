@@ -325,15 +325,31 @@ Bot qo'shilgan guruhlarni o'zi eslab qoladi (adminlarga "📦 Bot guruhga qo'shi
 | `/kam` · ⚠️ Kam qolganlar | Qoldig'i chegaradan (standart 3) kam yoki BITO'dagi `red_line` / `yellow_line` dan past mahsulotlar |
 | `/bugun` · 📅 Bugun tugaganlar | Bugun tugagan va qayta kelganlar |
 | `/sku 3147` · 🔎 SKU qidirish | Mahsulot kartochkasi (rasm, nomi, narx, qoldiq, 0 bo'lsa tugagan sana) |
+| `/kategoriya` · 📂 Kategoriyalar | Kategoriyalar (nomi va mahsulotlar soni), 10 tadan "⬅️/➡️" bilan; tanlanganda: 📦 Hammasi / ❌ Tugaganlar / ⚠️ Kam qolganlar / ✅ Bor (sotuvda) |
+| `/qidir blaknot` · 🔎 Qidirish | Nom qismi, SKU yoki shtrix-kod bo'yicha BITO'dan qidirish, holat bo'yicha saralash tugmalari bilan |
+| `/tugagan blaknot`, `/kam blaknot` | Shu kategoriyadagi tugagan / kam qolganlar (nomning bir qismi ham bo'ladi) |
 
 Privacy mode yoqilgan bo'lsa ham buyruqlar va "🔎 SKU qidirish" (botga javob orqali) ishlaydi. Pastdagi tugmalar oddiy matn yuboradi — ular ishlashi uchun botni guruhda **admin** qiling (yoki @BotFather → /setprivacy → Disable). Admin panel bu haqda ogohlantiradi.
+
+**Kategoriya va qidiruv natijalari** umumiy formatda: xulosa ("📂 Blaknot: jami N, tugagan A, kam B, bor C"), matnli ro'yxat (`1. nomi — SKU — qoldiq — narx — tugagan sana`; narx ma'lum bo'lsa), keyin rasmlar 10 talik albomlarda (nomi, SKU, narx, qoldiq, tugagan sana), 50 tadan ko'p bo'lsa "➡️ Keyingi". Kategoriyalar katalog keshidan (mahsulotlarning `category` maydoni) olinadi. Guruhning istalgan a'zosi ishlata oladi, lekin faqat tanlangan ombor guruhida.
 
 **Tugaganlar ro'yxati (`/tugagan`, "❌ Tugaganlar").**
 
 1. `📋 Tugagan mahsulotlar: N ta (yangilangan: dd.mm.yyyy HH:MM)` va to'liq matnli ro'yxat — `1. nomi — SKU 3147 — 14.10.2026 12:30` (Telegram'ning 4096 belgi limitiga qarab bir nechta xabarga bo'linadi; rasmsizlar "(rasmsiz)" belgisi bilan faqat shu yerda).
 2. Rasmlar 10 talik albomlarda (har rasmda nomi, SKU, narx, "📦 Qoldiq: 0", "📅 Tugagan sana"), albomlar orasida 2,5 soniya pauza. Bir martada 50 ta rasm, keyin **"➡️ Keyingi 50 ta rasm"** tugmasi.
 
-Katalog hali to'liq tekshirilmagan bo'lsa (masalan bot endigina qo'shilgan), bot bo'sh javob bermaydi: darhol "🔄 Katalog tekshirilmoqda: X/5627..." xabarini yuboradi va katalogni o'qiy boshlaydi (har sahifadan keyin xabar yangilanadi). Vaqt yetmasa, tekshiruv keyingi tick'da davom etadi va tugashi bilan ro'yxat guruhga **avtomatik** yuboriladi. Admin panelda **"🔄 Katalogni hozir to'liq tekshirish"** tugmasi ham bor (progress bilan).
+Katalog hali to'liq tekshirilmagan bo'lsa (masalan bot endigina qo'shilgan), bot hech qachon bo'sh "0" ko'rsatmaydi. Hozirgacha topilganlar "(to'liq emas — 400/5627 tekshirildi)" belgisi bilan ko'rsatiladi va tekshiruv darhol boshlanadi / davom etadi. Progress xabari (ko'pi bilan har 3 soniyada yangilanadi):
+
+```
+🔄 Katalog tekshirilmoqda...
+🔄 Tekshirildi: 400 / 5627 mahsulot
+❌ Hozircha tugagan topildi: 37 ta
+⚠️ Kam qolgan: 12 ta
+✅ Sotuvda: 351 ta
+⏳ Taxminiy qolgan vaqt: ~3 daqiqa
+```
+
+Tugaganda: "✅ Tekshiruv tugadi: 5627 ta mahsulot tekshirildi. ❌ Tugagan: N ta, ⚠️ Kam qolgan: M ta" va keyin umumiy ro'yxat (matn + rasmlar). Vaqt yetmasa, tekshiruv keyingi tick'da davom etadi va natija guruhga **avtomatik** yuboriladi. "❌ Tugaganlar", kategoriyalar va "📤 Hisobotni hozir yuborish" tekshiruv ishlamayotgan bo'lsa uni o'zi boshlaydi. Admin panelda **"🔄 Katalogni hozir to'liq tekshirish"** tugmasi ham bor.
 
 **Kunlik ro'yxat** ("📋 Kunlik ro'yxat" ✅, standart 09:00 Toshkent, admin panelda o'zgartiriladi): "📋 Bugungi hisobot: tugagan N ta, kam qolgan M ta" va yuqoridagi formatdagi to'liq ro'yxat. Katalog hali to'liq tekshirilmagan bo'lsa — tekshiruv tugagach yuboriladi. "📤 Hisobotni hozir yuborish" tugmasi — darhol.
 
