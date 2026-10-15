@@ -300,7 +300,7 @@ Qoldiq "⚠️ Kam qoldi" chegarasidan (⚙️ Limitlar, standart 3) oshmasa nar
 
 ### 🤖 AI tavsif (Google Gemini)
 
-Mijoz postlarida nom ostida qisqa sotuvchi tavsif: `📝 ...` — o'zbek tilida (lotin), 1–2 gap, 300 belgigacha. Gemini mahsulot **rasmi va nomi** bo'yicha yozadi; har mahsulot uchun **bir marta** yoziladi va Redis'da saqlanadi (keyingi "qayta keldi", chegirma postlarida o'sha tavsif). Gemini javob bermasa yoki xato qaytarsa, post tavsifsiz odatdagidek chiqadi (bitta mahsulot uchun soatiga bir marta qayta uriniladi).
+Mijoz postlarida nom ostida qisqa va lo'nda tavsif: `📝 ...` — o'zbek tilida (lotin), **bitta gap**, ~110 belgigacha (masalan: "Sovg'a va telefonni bezash uchun yaltiroq 3D stikerlar."). Uslub o'zgarganda eski AI tavsiflar keyingi postda yangi uslubda qayta yoziladi; admin o'zi yozganlari (300 belgigacha) o'zgarmaydi. Gemini mahsulot **rasmi va nomi** bo'yicha yozadi; har mahsulot uchun **bir marta** yoziladi va Redis'da saqlanadi (keyingi "qayta keldi", chegirma postlarida o'sha tavsif). Gemini javob bermasa yoki xato qaytarsa, post tavsifsiz odatdagidek chiqadi (bitta mahsulot uchun soatiga bir marta qayta uriniladi).
 
 Sozlash: **`GEMINI_API_KEY`** — Vercel → Settings → Environment Variables (kalit faylga yoki chatga yozilmaydi), keyin qayta deploy. Kalit https://aistudio.google.com/apikey dan olinadi; API to'lovi Google AI Studio / Cloud orqali alohida (Gemini ilovasi obunasi API'ni o'z ichiga olmaydi). Model standart `gemini-3.8-flash` (Google `gemini-2.5-flash` ni yangi foydalanuvchilarga yopgan), `GEMINI_MODEL` bilan o'zgartiriladi. Google model eskirdi deb boshqasini ko'rsatsa (404 "…use models/X"), bot X ga o'zi o'tadi va uni eslab qoladi.
 
