@@ -325,11 +325,21 @@ Bot qo'shilgan guruhlarni o'zi eslab qoladi (adminlarga "📦 Bot guruhga qo'shi
 | `/kam` · ⚠️ Kam qolganlar | Qoldig'i chegaradan (standart 3) kam yoki BITO'dagi `red_line` / `yellow_line` dan past mahsulotlar |
 | `/bugun` · 📅 Bugun tugaganlar | Bugun tugagan va qayta kelganlar |
 | `/sku 3147` · 🔎 SKU qidirish | Mahsulot kartochkasi (rasm, nomi, narx, qoldiq, 0 bo'lsa tugagan sana) |
+| `/kategoriyalar` · 📊 Kategoriya statistikasi | Barcha BITO kategoriyalari bo'yicha statistika (pastda) |
 | `/kategoriya` · 📂 Kategoriyalar | Kategoriyalar (nomi va mahsulotlar soni), 10 tadan "⬅️/➡️" bilan; tanlanganda: 📦 Hammasi / ❌ Tugaganlar / ⚠️ Kam qolganlar / ✅ Bor (sotuvda) |
 | `/qidir blaknot` · 🔎 Qidirish | Nom qismi, SKU yoki shtrix-kod bo'yicha BITO'dan qidirish, holat bo'yicha saralash tugmalari bilan |
 | `/tugagan blaknot`, `/kam blaknot` | Shu kategoriyadagi tugagan / kam qolganlar (nomning bir qismi ham bo'ladi) |
 
 Privacy mode yoqilgan bo'lsa ham buyruqlar va "🔎 SKU qidirish" (botga javob orqali) ishlaydi. Pastdagi tugmalar oddiy matn yuboradi — ular ishlashi uchun botni guruhda **admin** qiling (yoki @BotFather → /setprivacy → Disable). Admin panel bu haqda ogohlantiradi.
+
+**📊 Kategoriya statistikasi** (`/kategoriyalar`). Kategoriyalar ro'yxati BITO'ning o'zidan olinadi (`/category/get-paging`, barcha sahifalar, 10 daqiqa keshlanadi) — skanerni kutmasdan. Xabar boshida:
+
+```
+📂 BITO'da jami 563 ta kategoriya | 📦 jami mahsulot 5627 | ❌ tugagan 412 | ⚠️ kam 96 | ✅ bor 5215
+🕘 Oxirgi to'liq tekshiruv: 15.10.2026 06:10        (yoki "to'liq emas — 400/5627")
+```
+
+Keyin har bir kategoriya bir qatorda — `Nomi — jami 120 | ❌ 15 | ⚠️ 4 | ✅ 101` (standart: eng ko'p tugagani tepada; "Kategoriyasiz" qatori ham bor), 4096 belgi limitiga qarab bo'linadi. Pastda tugmalar: "Saralash: ❌ ko'p tugagan / 🔤 nom / 📦 ko'p mahsulot" va 10 tadan sahifali kategoriyalar "Nomi (❌15)" — bosilganda o'sha kategoriyaning tugaganlari darhol rasm bilan chiqadi, yonida ⚠️ Kam / ✅ Bor / Hammasi filtrlari. Tugagan / kam / bor sonlari katalog keshidan (skaner `product.category` ni ham saqlaydi); katalog to'liq tekshirilmagan bo'lsa "jami" BITO'dagi `item_count` dan olinadi, sonlar "to'liq emas" deb belgilanadi va tekshiruv progress bilan boshlanadi. "📂 Kategoriyalar" tugmalarida ham tugaganlar soni: "Nomi (120 | ❌15)".
 
 **Kategoriya va qidiruv natijalari** umumiy formatda: xulosa ("📂 Blaknot: jami N, tugagan A, kam B, bor C"), matnli ro'yxat (`1. nomi — SKU — qoldiq — narx — tugagan sana`; narx ma'lum bo'lsa), keyin rasmlar 10 talik albomlarda (nomi, SKU, narx, qoldiq, tugagan sana), 50 tadan ko'p bo'lsa "➡️ Keyingi". Kategoriyalar katalog keshidan (mahsulotlarning `category` maydoni) olinadi. Guruhning istalgan a'zosi ishlata oladi, lekin faqat tanlangan ombor guruhida.
 
