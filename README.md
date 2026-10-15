@@ -325,8 +325,8 @@ Bot qo'shilgan guruhlarni o'zi eslab qoladi (adminlarga "📦 Bot guruhga qo'shi
 | `/kam` · ⚠️ Kam qolganlar | Qoldig'i chegaradan (standart 3) kam yoki BITO'dagi `red_line` / `yellow_line` dan past mahsulotlar |
 | `/bugun` · 📅 Bugun tugaganlar | Bugun tugagan va qayta kelganlar |
 | `/sku 3147` · 🔎 SKU qidirish | Mahsulot kartochkasi (rasm, nomi, narx, qoldiq, 0 bo'lsa tugagan sana) |
-| `/kategoriyalar` · 📊 Kategoriya statistikasi | Barcha BITO kategoriyalari bo'yicha statistika (pastda) |
-| `/kategoriya` · 📂 Kategoriyalar | Kategoriyalar (nomi va mahsulotlar soni), 10 tadan "⬅️/➡️" bilan; tanlanganda: 📦 Hammasi / ❌ Tugaganlar / ⚠️ Kam qolganlar / ✅ Bor (sotuvda) |
+| `/kategoriyalar` · 📊 Kategoriya statistikasi | BITO kategoriyalari statistikasi: asosiylari, ichkilari qo'shib hisoblanadi (pastda) |
+| `/kategoriya` · 📂 Kategoriyalar | Asosiy kategoriyalar (nomi va mahsulotlar soni, ichki kategoriyalari bilan), 10 tadan "⬅️/➡️" bilan; tanlanganda: 📦 Hammasi / ❌ Tugaganlar / ⚠️ Kam qolganlar / ✅ Bor (sotuvda) |
 | `/qidir blaknot` · 🔎 Qidirish | Nom qismi, SKU yoki shtrix-kod bo'yicha BITO'dan qidirish, holat bo'yicha saralash tugmalari bilan |
 | `/tugagan blaknot`, `/kam blaknot` | Shu kategoriyadagi tugagan / kam qolganlar (nomning bir qismi ham bo'ladi) |
 
@@ -335,11 +335,17 @@ Privacy mode yoqilgan bo'lsa ham buyruqlar va "🔎 SKU qidirish" (botga javob o
 **📊 Kategoriya statistikasi** (`/kategoriyalar`). Kategoriyalar ro'yxati BITO'ning o'zidan olinadi (`/category/get-paging`, barcha sahifalar, 10 daqiqa keshlanadi) — skanerni kutmasdan. Xabar boshida:
 
 ```
-📂 BITO'da jami 563 ta kategoriya | 📦 jami mahsulot 5627 | ❌ tugagan 412 | ⚠️ kam 96 | ✅ bor 5215
+📂 BITO'da jami 563 ta kategoriya (asosiy: 41 ta, ichki: 310 ta, bo'sh: 212 ta) | 📦 jami mahsulot 5627 | ❌ tugagan 412 | ⚠️ kam 96 | ✅ bor 5215
 🕘 Oxirgi to'liq tekshiruv: 15.10.2026 06:10        (yoki "to'liq emas — 400/5627")
 ```
 
-Keyin har bir kategoriya bir qatorda — `Nomi — jami 120 | ❌ 15 | ⚠️ 4 | ✅ 101` (standart: eng ko'p tugagani tepada; "Kategoriyasiz" qatori ham bor), 4096 belgi limitiga qarab bo'linadi. Pastda tugmalar: "Saralash: ❌ ko'p tugagan / 🔤 nom / 📦 ko'p mahsulot" va 10 tadan sahifali kategoriyalar "Nomi (❌15)" — bosilganda o'sha kategoriyaning tugaganlari darhol rasm bilan chiqadi, yonida ⚠️ Kam / ✅ Bor / Hammasi filtrlari. Tugagan / kam / bor sonlari katalog keshidan (skaner `product.category` ni ham saqlaydi); katalog to'liq tekshirilmagan bo'lsa "jami" BITO'dagi `item_count` dan olinadi, sonlar "to'liq emas" deb belgilanadi va tekshiruv progress bilan boshlanadi. "📂 Kategoriyalar" tugmalarida ham tugaganlar soni: "Nomi (120 | ❌15)".
+Kategoriyalar ierarxik (`parent_id`, `child_count`, `item_count`): **asosiy** — `parent_id` yo'q (yoki ota-kategoriyasi ro'yxatda yo'q), **ichki** — boshqa kategoriya ichidagilar, **bo'sh** — `item_count` 0, `child_count` 0 va keshda mahsuloti yo'q kategoriyalar (yashiriladi). Asosiy + ichki + bo'sh = BITO'dagi kategoriyalar soni.
+
+Keyin faqat **asosiy kategoriyalar** bir qatorda — `Nomi — jami 120 | ❌ 15 | ⚠️ 4 | ✅ 101`; har biriga barcha ichki kategoriyalaridagi (har qanday chuqurlikda) mahsulotlar ham qo'shib hisoblanadi (standart: eng ko'p tugagani tepada; "Kategoriyasiz" qatori ham bor), 4096 belgi limitiga qarab bo'linadi, oxirida `bo'sh: K ta`. Pastda tugmalar: "Saralash: ❌ ko'p tugagan / 🔤 nom / 📦 ko'p mahsulot" va 10 tadan sahifali asosiy kategoriyalar "Nomi (❌15)":
+- ichki kategoriyasi bor kategoriya bosilsa — xulosa (`📂 Sovg'alar › Blaknot: jami …`), **📦 Hammasi (N | ❌n)** tugmasi (butun shoxcha bo'yicha tugaganlar + filtrlar), ichki kategoriyalar "Nomi (120 | ❌15)" (bo'shlari yashirin, 10 tadan "⬅️/➡️") va "⬆️ Ota-kategoriya" — sahifalash va ⬆️ o'sha xabarni tahrirlaydi;
+- ichki kategoriyasi yo'q kategoriya bosilsa — uning tugaganlari darhol rasm bilan, yonida ⚠️ Kam / ✅ Bor / Hammasi filtrlari.
+
+Tugagan / kam / bor sonlari katalog keshidan (skaner `product.category` ni ham saqlaydi); katalog to'liq tekshirilmagan bo'lsa "jami" shoxchadagi `item_count` lar yig'indisidan (keshdagidan katta bo'lsa) olinadi, sonlar "to'liq emas" deb belgilanadi va tekshiruv progress bilan boshlanadi. "📂 Kategoriyalar" ham asosiy kategoriyalarni (mahsuloti borlarini) "Nomi (120 | ❌15)" ko'rinishida chiqaradi; ichki kategoriyasi borlari ichki ro'yxatni ochadi. `/tugagan blaknot`, `/kam sovg'a` va filtrlar ham kategoriyaning barcha ichki kategoriyalarini qamraydi (nom bo'yicha qidiruv ichki kategoriyalarni ham topadi).
 
 **Kategoriya va qidiruv natijalari** umumiy formatda: xulosa ("📂 Blaknot: jami N, tugagan A, kam B, bor C"), matnli ro'yxat (`1. nomi — SKU — qoldiq — narx — tugagan sana`; narx ma'lum bo'lsa), keyin rasmlar 10 talik albomlarda (nomi, SKU, narx, qoldiq, tugagan sana), 50 tadan ko'p bo'lsa "➡️ Keyingi". Kategoriyalar katalog keshidan (mahsulotlarning `category` maydoni) olinadi. Guruhning istalgan a'zosi ishlata oladi, lekin faqat tanlangan ombor guruhida.
 
