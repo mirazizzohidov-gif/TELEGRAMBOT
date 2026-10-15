@@ -38,6 +38,8 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `LOW_STOCK_THRESHOLD` | yo'q | "Kam qoldi" chegarasi (dona), standart `3`. Admin panelda o'zgartiriladi |
 | `RESTOCK_POST` | yo'q | `false` — "🔄 Qayta keldi" avtopostining standart holati o'chiq (standart yoqilgan). Admin panelda o'zgartiriladi |
 | `RESTOCK_DEDUP_DAYS` | yo'q | Bitta mahsulot "🔄 Qayta keldi" bo'lib necha kunda ko'pi bilan 1 marta chiqadi, standart `7`. Admin panelda o'zgartiriladi |
+| `GEMINI_API_KEY` | yo'q | "🤖 AI tavsif" uchun Google Gemini API kaliti (aistudio.google.com/apikey). Bo'lmasa postlar tavsifsiz |
+| `GEMINI_MODEL` | yo'q | Gemini modeli, standart `gemini-2.5-flash` |
 | `RESTOCK_MIN_STOCK` | yo'q | "🔄 Qayta keldi" posti uchun kamida qoldiq, standart `1`. Admin panelda o'zgartiriladi |
 | `RESTOCK_NIGHT` | yo'q | `false` — qayta kelganlar 23:00–08:00 da ertalabgacha kutadi (standart: kechasi ham chiqadi) |
 | `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
@@ -295,6 +297,19 @@ Har bir post turining o'z sarlavhasi bor (mijoz adashmasligi uchun 🔥 faqat ch
 | Random / qo'lda SKU | sarlavhasiz |
 
 Qoldiq "⚠️ Kam qoldi" chegarasidan (⚙️ Limitlar, standart 3) oshmasa narx ostida **"⏳ Cheklangan miqdorda"** qatori (necha dona qolgani yozilmaydi) qo'shiladi (kanal posti, story va preview'da).
+
+### 🤖 AI tavsif (Google Gemini)
+
+Mijoz postlarida nom ostida qisqa sotuvchi tavsif: `📝 ...` — o'zbek tilida (lotin), 1–2 gap, 300 belgigacha. Gemini mahsulot **rasmi va nomi** bo'yicha yozadi; har mahsulot uchun **bir marta** yoziladi va Redis'da saqlanadi (keyingi "qayta keldi", chegirma postlarida o'sha tavsif). Gemini javob bermasa yoki xato qaytarsa, post tavsifsiz odatdagidek chiqadi (bitta mahsulot uchun soatiga bir marta qayta uriniladi).
+
+Sozlash: **`GEMINI_API_KEY`** — Vercel → Settings → Environment Variables (kalit faylga yoki chatga yozilmaydi), keyin qayta deploy. Kalit https://aistudio.google.com/apikey dan olinadi; API to'lovi Google AI Studio / Cloud orqali alohida (Gemini ilovasi obunasi API'ni o'z ichiga olmaydi). Model standart `gemini-2.5-flash`, `GEMINI_MODEL` bilan o'zgartiriladi (masalan `gemini-2.5-pro`).
+
+Admin panel → **🤖 AI tavsif**:
+- **🤖 AI tavsif: ✅/❌** — umuman yoqish / o'chirish (kalit bo'lmasa "❌ (kalit yo'q)");
+- **📢 Kanalga**, **👥 Guruhga** ("✅ Qayta keldi" va "🆕 Yangi mahsulot → guruh"), **📱 Istoriyaga** — har biri alohida ✅/❌;
+- **🧪 AI sinash** — oxirgi rasmli mahsulot uchun tavsif yozdirib, kalit ishlashini va javob vaqtini ko'rsatadi (xato bo'lsa Google'ning xato matni).
+
+`/tavsif 667142` (admin chatida) — mahsulot posti tavsif bilan, tugmalar: **🔄 AI qayta yozsin**, **✏️ O'zim yozaman**, **🗑 O'chirish**. SKU preview'da ham tavsif ko'rinadi. Kunlik hisobotda: "🤖 AI tavsif: N ta yozildi".
 
 ### 🔔 Kelganda xabar ber (mijozlar uchun)
 
