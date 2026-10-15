@@ -75,7 +75,7 @@ Admin panelda saqlangan sozlama (telefon, kanallar, havola, profil) env qiymatid
 
    Shundan keyin bot Telegram'dagi xabarlarga javob beradi. Shu chaqiruv har bir admin uchun bot buyruqlarini ham o'rnatadi (`/admin`, `/random`, `/report`, `/now`) va menyu tugmasini "Commands" qiladi — oddiy foydalanuvchilarga bu buyruqlar ko'rinmaydi. `WEBHOOK_SECRET`, domen yoki `ADMIN_IDS` o'zgarsa, qayta chaqiring. (Admin avval botga kamida bir marta yozgan bo'lishi kerak, aks holda javobdagi `commands` ro'yxatida xato ko'rinadi.)
 5. **Admin panel.** Botga `/start` yoki `/admin` yozing.
-6. **Story (ixtiyoriy).** Har bir biznes akkauntda: Telegram → Settings → Telegram Business → Chatbots → botni qo'shing va story huquqini bering. Bot ulanishni o'zi saqlaydi, uni avtomatik ✅ qiladi va adminlarga "Yangi profil ulandi: @username" deb xabar beradi. Story'lar **barcha belgilangan profillarga** chiqadi; "📱 Story profillari" bo'limida istalganini olib tashlash yoki qaytarish mumkin.
+6. **Story (ixtiyoriy).** Har bir biznes akkauntda: Telegram → Settings → Telegram Business → Chatbots → botni qo'shing va story huquqini bering. Bot ulanishni o'zi saqlaydi, uni avtomatik ✅ qiladi va adminlarga "Yangi profil ulandi: @username" deb xabar beradi. Story'lar **barcha belgilangan profillarga** chiqadi; "📸 Istoriya profillari" bo'limida istalganini olib tashlash yoki qaytarish mumkin.
 7. **Har 15 daqiqalik cron (`/api/cron/tick`).**
    - **Hobby (bepul) tarif:** Vercel cron kuniga faqat 1 marta ishlaydi, shuning uchun [cron-job.org](https://cron-job.org) da vazifa yarating:
      - URL: `https://<loyiha>.vercel.app/api/cron/tick`
@@ -118,7 +118,7 @@ Admin panel menyusi (`⚙️ Admin panel`):
 | 🔥 Chegirma → story ✅/❌ | Chegirma uchun story |
 | Albom rejimi ✅/❌ | Bir vaqtda 2+ yangi mahsulot chiqsa, albom qilib yuboradi (10 tadan) |
 | ⚙️ Limitlar | Kunlik va tick limitlari (pastda) |
-| 📱 Story profillari | Story'lar qaysi biznes profillarga chiqishi (bir nechtasini belgilash mumkin) |
+| 📸 Istoriya profillari | Har profil holati (✅ / ❌ admin o'chirgan / ⚪️ ulanish o'chiq yoki story ruxsati yo'q, bugungi soni), ✅/❌ toggle, **🧪 Test istoriya** (tasdiqlagandan keyin oxirgi rasmli mahsulot barcha ✅ profillarga 6 soatga) |
 | 🚫 Random qora ro'yxat | Random'dan butunlay chiqarilgan mahsulotlar; bosib qaytarish mumkin |
 | 📞 Telefon | Caption'dagi telefon raqami |
 | 📢 Kanallar | Kanal qo'shish (`@username` yoki `-100...`), o'chirish, faol/nofaol qilish |
@@ -181,7 +181,15 @@ Qora ro'yxatni admin paneldagi **🚫 Random qora ro'yxat** bo'limida ko'rish va
 | 🎲 Random joylash | preview'dagi "📱 Story" yoki "📢+📱 Ikkalasi" |
 | 🚀 Hozir joylash | yangi mahsulot/chegirma kanal va story tugmalariga amal qiladi |
 
-Har bir mahsulot uchun alohida story — **har bir belgilangan biznes profilga** (masalan @Mixpodarok0307 va @Shtabfoto ikkalasiga). Limitlar **har profil uchun alohida** hisoblanadi: chegirmadan boshqa barcha story'lar "📱 Story kunlik limiti"ga, chegirma story'lari "🔥 Chegirma story kunlik limiti"ga bo'ysunadi. Limitdan oshganlari story navbatida qoladi va keyingi kuni avtomatik chiqadi (qo'lda tanlanganlari avtomatik story tugmalari o'chiq bo'lsa ham chiqadi). Qo'lda joylashda bot natijani har profil bo'yicha aytadi, masalan: `📱 Story: @Mixpodarok0307 ✅, @Shtabfoto ❌ (Bad Request: ...)`, va nechtasi navbatda qolganini. Preview tugmasida nechta profilga ketishi ko'rinadi: "📱 Story (2 profil)". Bosh menyuda: "📱 Bugun story: @a 3/20, @b 2/20".
+Har bir mahsulot uchun alohida story — **har bir belgilangan biznes profilga** (masalan @Mixpodarok0307 va @Shtabfoto ikkalasiga). Limitlar **har profil uchun alohida** hisoblanadi: chegirmadan boshqa barcha story'lar "📱 Story kunlik limiti"ga, chegirma story'lari "🔥 Chegirma story kunlik limiti"ga bo'ysunadi. Limitdan oshganlari story navbatida qoladi va keyingi kuni avtomatik chiqadi (qo'lda tanlanganlari avtomatik story tugmalari o'chiq bo'lsa ham chiqadi). Qo'lda joylashda bot natijani har profil bo'yicha aytadi, masalan: `📸 Istoriya: @Mixpodarok0307 ✅, @Shtabfoto ❌ Bad Request: ...`, va nechtasi navbatda qolganini.
+
+**Barcha yo'llar bitta funksiyadan** (`postStoryToAll`, `lib/poster.js`): yangi mahsulot, chegirma, random, SKU, "🔄 Qayta keldi", test va `/api/story`. U Redis'dagi har bir ulanishni aylanib chiqadi — `is_enabled`, `can_manage_stories` ruxsati bor va admin o'chirmagan profillar — har biri alohida try/catch bilan:
+- Telegram xatosida (rasm o'lchami, `BUSINESS_PEER_INVALID`, premium, limit va h.k.) **1 marta qayta urinadi**, sabab hisobotda ko'rinadi;
+- logda har profil: `story -> @Shtabfoto: ok` yoki `story -> @Shtabfoto: xato <Telegram description>`;
+- avtomatik story'lar (yangi mahsulot, chegirma) uchun adminga har mahsulot bo'yicha: `SKU 1234 — 📸 Istoriya: @Mixpodarok0307 ✅, @Shtabfoto ❌ <sabab>` (bir xil xato bir profil uchun soatiga bir marta) va 💡 maslahat;
+- story navbati tick'da **ombor tekshiruvidan oldin** bajariladi, bitta mahsulot barcha profillarga birga yuboriladi: vaqt yetmasa mahsulot butunligicha keyingi tick'ka qoladi (bir profilga chiqib, boshqasiga jim qolib ketmaydi).
+
+Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun `story` maydonini qaytaradi: `ok` / `off` (admin o'chirgan) / `disabled` / `no_rights`. Preview tugmasida nechta profilga ketishi ko'rinadi: "📱 Story (2 profil)". Bosh menyuda: "📱 Bugun story: @a 3/20, @b 2/20".
 
 **Story xatolari.** Jim xato bo'lmaydi: Telegram story'ni qabul qilmasa (ruxsat yo'q, biznes ulanish o'chgan, akkaunt story limiti tugagan, Premium kerak va h.k.), qaysi profilda ekani, Telegram'ning aniq xato matni (`description`) va maslahat adminga yuboriladi hamda `console.error` bilan logga yoziladi (Vercel → Logs). Avtomatik joylashda bir profildagi bir xil xato soatiga bir martadan ko'p yuborilmaydi. Bunday xatoda o'sha profilning story'lari yo'qolmaydi — navbatda qoladi va muammo hal bo'lgach chiqadi; boshqa profillar ishlashda davom etadi.
 

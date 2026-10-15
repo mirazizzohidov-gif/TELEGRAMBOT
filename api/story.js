@@ -2,7 +2,8 @@ import { resolveProduct } from '../lib/bito.js';
 import { buildCaption, buildPostCaption } from '../lib/caption.js';
 import { checkSecret, readBody } from '../lib/request.js';
 import { getSettingsSafe, listBiz, storyProfiles } from '../lib/store.js';
-import { ACTIVE_PERIODS, downloadImage, postStory, toStoryJpeg } from '../lib/story.js';
+import { postStoryToAll } from '../lib/poster.js';
+import { ACTIVE_PERIODS } from '../lib/story.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -27,31 +28,20 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(err.status || 500).json({ ok: false, error: err.message, details: err.details });
   }
-  let photo;
-  try {
-    photo = await toStoryJpeg(await downloadImage(product.image_url));
-  } catch (err) {
-    return res.status(502).json({ ok: false, error: 'Image processing failed', details: String(err) });
-  }
-  // Posted to every selected business profile; story_id is the first successful one.
-  const results = [];
-  for (const p of profiles) {
-    try {
-      const story = await postStory({
-        businessConnectionId: p.id,
-        photo,
-        ...(product.discount
-          ? { caption: buildPostCaption({ name: product.name, ...product.discount }, settings.phone), parseMode: 'HTML' }
-          : { caption: buildCaption(product.name, product.price, settings.phone) }),
-        activePeriod,
-      });
-      results.push({ profile: p.label, ok: true, story_id: story.id });
-    } catch (err) {
-      console.error(`story failed: profile=${p.label} (${p.id}): ${err.data?.description || err.message}`);
-      results.push({ profile: p.label, ok: false, error: err.data?.description || String(err) });
-    }
-  }
-  const first = results.find((r) => r.ok);
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Every selected business profile through the shared story path (one retry per profile, logged).
+  const r = await postStoryToAll({ sku: product.sku || body.sku || 'api', name: product.name, image_url: product.image_url }, settings, {
+    profiles,
+    activePeriod,
+    ignoreLimit: true,
+    noQueue: true,
+    deadline: Date.now() + 240000,
+    caption: product.discount
+      ? buildPostCaption({ name: product.name, ...product.discount }, settings.phone)
+      : esc(buildCaption(product.name, product.price, settings.phone)),
+  });
+  const results = r.profiles.map((p) => (p.ok ? { profile: p.label, ok: true, story_id: p.story_id } : { profile: p.label, ok: false, error: p.error }));
+  const first = results.find((x) => x.ok);
   if (!first) {
     return res.status(502).json({ ok: false, error: 'Telegram error', results, product });
   }
