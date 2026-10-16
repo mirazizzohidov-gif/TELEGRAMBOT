@@ -399,6 +399,7 @@ Admin panel → **👥 Yordamchi adminlar**. Faqat asosiy admin `5812004211` bos
 - **➕ Qo'shish** — Telegram ID (ixtiyoriy ism bilan: `123456789 Ali`) yoki shu odamdan forward qilingan xabar. Profilini yashirgan odamning forward'idan ID olib bo'lmaydi — bot ID so'raydi. Adminni yordamchi qilib bo'lmaydi.
 - **Ro'yxat**, har yordamchi uchun:
   - **📍 Manzil** — aynan BITTA kanal yoki guruh, bot admin bo'lganlar ro'yxatidan ("Sana bo'yicha yuborish"dagi kabi);
+  - **🛍 Nomi / 🔖 SKU / 💰 Narxi: ✅/❌** — standart uchalasi ✅. ❌ maydon so'ralmaydi va post shablonidan o'sha qator butunlay olib tashlanadi (bo'sh qator qolmaydi). Rasm doim majburiy; sarlavha "🆕 YANGI MAHSULOT", telefon va "🛒 Buyurtma berish" tugmasi doim qoladi. Uchalasi ❌ bo'lsa post: rasm + sarlavha + telefon + tugma;
   - **✅/❌ faol**;
   - **✏️ Ism**;
   - **🗑 O'chirish** — tasdiq so'raladi.
@@ -406,13 +407,13 @@ Admin panel → **👥 Yordamchi adminlar**. Faqat asosiy admin `5812004211` bos
 
 **Yordamchi nima qila oladi:** faqat post yaratadi. Admin panel, sozlamalar va admin tugmalari unga ishlamaydi. Botda unga **📝 Post yaratish** tugmasi chiqadi.
 
-**Post bosqichlari** (har birida **❌ Bekor**):
-1. rasm (photo yoki rasm-fayl; fayl bo'lsa bot uni rasmga aylantiradi);
+**Post bosqichlari** (har birida **❌ Bekor**; faqat yoqilgan maydonlar so'raladi, raqamlash shunga qarab — masalan "1/2", "2/2"):
+1. rasm (photo yoki rasm-fayl; fayl bo'lsa bot uni rasmga aylantiradi). **Faqat 1 ta rasm:** albom yoki bir nechta rasm yuborilsa, faqat birinchisi olinadi va "Faqat 1 ta rasm qabul qilinadi" deyiladi; keyingi bosqichda yana rasm yuborsa ham shunday;
 2. mahsulot nomi (≤ 200 belgi);
 3. SKU;
 4. narx (`185000`, `185 000`, `185 000 so'm` — hammasi qabul qilinadi).
 
-Keyin preview: **✅ Joylash** / **✏️ Tahrirlash** (rasm, nom, SKU yoki narxni alohida o'zgartirish) / **❌ Bekor**.
+Keyin preview (postning o'zi, o'chirilgan qatorlarsiz): **✅ Joylash** / **✏️ Tahrirlash** (rasm yoki yoqilgan maydonlardan birini alohida o'zgartirish) / **❌ Bekor**. Yordamchi post yaratayotganda maydon yoqilsa, preview'dan oldin o'sha maydon ham so'raladi.
 
 **✅ Joylash** bosilgach post asosiy admin tasdiqisiz darhol yordamchining manziliga ketadi. Shablon:
 

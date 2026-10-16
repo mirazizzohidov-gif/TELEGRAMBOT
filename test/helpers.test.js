@@ -57,3 +57,22 @@ test('2nd channel: marked-up price, its own phone and button', () => {
   const p1 = helperPost(d, { id: '@ch', label: '📢 ch', kind: 'ch1' }, s);
   assert.ok(p1.caption.includes("185 000 so'm") && p1.caption.includes('+998982000307'));
 });
+
+test('fields switched off: their lines are left out, no empty lines; header, phone, button stay', () => {
+  const dest = { id: '-100500', label: '👥 Ombor', kind: 'group' };
+  const tail = '📞 Buyurtma uchun murojaat qiling: +998982000307';
+  assert.equal(helperPost(d, dest, s, ['sku', 'price']).caption, `🆕 YANGI MAHSULOT\n\n🔖 SKU: 670899\n💰 Narxi: 185 000 so'm\n\n${tail}`);
+  assert.equal(helperPost(d, dest, s, ['name']).caption, `🆕 YANGI MAHSULOT\n\n🛍 Mahsulot nomi: Krujka &lt;b&gt;"Sevgi"&lt;/b&gt; &amp; co\n\n${tail}`);
+  assert.equal(helperPost(d, dest, s, ['name', 'price']).caption, `🆕 YANGI MAHSULOT\n\n🛍 Mahsulot nomi: Krujka &lt;b&gt;"Sevgi"&lt;/b&gt; &amp; co\n💰 Narxi: 185 000 so'm\n\n${tail}`);
+  const none = helperPost({ photo: 'PHOTO_ID' }, dest, s, []);
+  assert.equal(none.caption, `🆕 YANGI MAHSULOT\n\n${tail}`);
+  assert.ok(!none.caption.includes('\n\n\n'));
+  assert.equal(none.reply_markup.inline_keyboard[0][0].text, '🛒 Buyurtma berish');
+});
+
+test('helperFields: all on by default, each one can be off', async () => {
+  const { helperFields } = await import('../lib/helpers.js');
+  assert.deepEqual(helperFields({}), ['name', 'sku', 'price']);
+  assert.deepEqual(helperFields({ fields: { sku: false } }), ['name', 'price']);
+  assert.deepEqual(helperFields({ fields: { name: false, sku: false, price: false } }), []);
+});
