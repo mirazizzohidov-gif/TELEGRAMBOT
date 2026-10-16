@@ -348,18 +348,24 @@ Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot 
 
 ### 📢 2-kanal (ustama narx bilan)
 
-Ikkinchi kanal: barcha postlar unga ham chiqadi, lekin narx **ustama foiz** bilan. Narx faqat post matnida o'zgaradi — BITO'ga hech narsa yozilmaydi. 1-kanal(lar), istoriyalar va guruhlarda BITO narxi qoladi. Telefon raqami va "🛒 Buyurtma berish" tugmasi ikkala kanalda bir xil.
+Ikkinchi kanal: barcha postlar unga ham chiqadi, lekin narx **ustama foiz** bilan. Narx faqat post matnida o'zgaradi — BITO'ga hech narsa yozilmaydi. 1-kanal(lar), istoriyalar va guruhlarda BITO narxi, asosiy telefon va asosiy tugma qoladi. 2-kanalning o'z telefoni va tugmasi bo'lishi mumkin (pastda).
 
 **Ulash:** Admin panel → **📢 2-kanal ulash** → kanal `@username` yoki `-100...` ID si.
 - Bot tekshiradi: `getChat`, so'ng `getChatMember`. Bot kanalda admin bo'lishi va "Xabar joylash" (`can_post_messages`) huquqi bo'lishi kerak. Bo'lmasa aniq yozadi: "Bot @kanal da admin emas" yoki "Bot @kanal da post yozish huquqi yo'q".
 - Guruh yoki 1-kanallardan biri 2-kanal bo'la olmaydi.
-- Sozlama Redis settings'da saqlanadi: `channel2 = { id, title, username, enabled, markup_percent }`.
+- Sozlama Redis settings'da saqlanadi: `channel2 = { id, title, username, enabled, markup_percent, phone, order_url }`.
 
 **2-kanal bo'limidagi tugmalar:**
 - holat (kanal nomi, ✅/❌);
 - **✅/❌ Yoqish/O'chirish**;
 - **📈 Ustama: 30%** — 0–500 oralig'idagi butun son;
-- **🔁 Almashtirish** — ustama saqlanib qoladi;
+- **📞 Telefon** — 2-kanal postidagi "📞 Buyurtma uchun murojaat qiling: …" raqami, faqat `+998XXXXXXXXX` (bo'shliq va chiziqcha bilan yozsa ham bo'ladi);
+- **🛒 Buyurtma tugmasi** — "🛒 Buyurtma berish" qayerga olib boradi:
+  - `@username`, `t.me/...` → `https://t.me/...`;
+  - `https://` havola o'zi;
+  - `+998XXXXXXXXX` → `https://t.me/+998XXXXXXXXX` (Telegram shu raqamli chatni ochadi; tugmaga `tel:` havola qo'yib bo'lmaydi);
+- ikkalasida ham **↩️ 1-kanaldagidek** — qiymatni bo'shatadi; bo'sh bo'lsa 1-kanal telefoni va tugmasi ishlatiladi (bo'limda "(1-kanaldagidek)" deb yoziladi);
+- **🔁 Almashtirish** — ustama, telefon va tugma saqlanib qoladi;
 - **🗑 Uzish** — tasdiq so'raladi.
 
 O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmalarda ham, matn javoblarida ham. Boshqa adminlar bo'limni faqat ko'radi.
@@ -380,10 +386,12 @@ O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmal
 - 1-kanal faol bo'lmasa ham 2-kanalga chiqadi.
 - 2-kanal xatosi 1-kanal va istoriyalarni to'xtatmaydi. Muvaffaqiyatsiz post 2-kanalning alohida navbatiga tushadi va keyingi tekshiruvlarda yana yuboriladi (jami 3 urinish).
 - Adminga "📢 2-kanal ❌ sabab" xabari keladi (bir xil xato soatiga 1 marta).
-- Dedupe alohida: bitta avtomatik post 12 soat ichida 2-kanalga ikki marta chiqmaydi. 1-kanal qayta yuborilganda ham 2-kanalda takror bo'lmaydi.
+- Dedupe alohida: bitta avtomatik post 12 soat ichida 2-kanalga ikki marta chiqmaydi (random postlar bundan mustasno — ular 1-kanalda ham ataylab takrorlanadi). 1-kanal qayta yuborilganda ham 2-kanalda takror bo'lmaydi.
 - Qo'lda joylashdan keyingi javobda "📢 2-kanal (…, +30%): ✅" yoki "❌ sabab" qatori bor. "Qayta keldi" hisobotida "2-kanal ✅/❌". Kunlik hisobotda 2-kanal postlari soni.
 
-**Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" yoziladi. "🧪 Test" ikkala ko'rinishni faqat adminga yuboradi.
+2-kanalga ketadigan barcha postlarda (albomdan keyingi "👇 Buyurtma" xabarida ham) shu telefon va tugma ishlatiladi. Keyinroq "📝" AI tavsif qo'shilganda ham post o'z telefoni va tugmasi bilan tahrirlanadi.
+
+**Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" va "📞 2-kanal telefoni: … · 🛒 tugma: …" yoziladi. "🧪 Test" ikkala ko'rinishni (har biri o'z telefoni va tugmasi bilan) faqat adminga yuboradi.
 
 ### 🛒 Bot ichida buyurtma
 
