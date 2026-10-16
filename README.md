@@ -44,6 +44,7 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `RESTOCK_MIN_STOCK` | yo'q | "🔄 Qayta keldi" posti uchun kamida qoldiq, standart `1`. Admin panelda o'zgartiriladi |
 | `RESTOCK_NIGHT` | yo'q | `false` — qayta kelganlar 23:00–08:00 da ertalabgacha kutadi (standart: kechasi ham chiqadi) |
 | `RESTOCK_PER_TICK` | yo'q | Bir tick'da ko'pi bilan nechta "🔄 Qayta keldi" posti, standart `5`. Admin panelda o'zgartiriladi |
+| `CHANNEL2_OWNER_ID` | yo'q | "📢 2-kanal" ni ulash/o'zgartirish huquqi bor yagona admin, standart `5812004211` (u `ADMIN_IDS` da ham bo'lishi kerak) |
 | `UNSOLD_DAYS` | yo'q | "📉 Sotilmayotganlar": necha kun sotilmagan bo'lsa, standart `60`. Admin panelda o'zgartiriladi |
 | `REORDER_DAYS` | yo'q | "🛒 Buyurtma qilish kerak": qoldiq necha kunga yetsa ro'yxatga tushadi, standart `7`. Admin panelda o'zgartiriladi |
 | `BITO_SALES_PATH` | yo'q | BITO "sotuv mahsulot bo'yicha" hisoboti endpointi. Odatda kerak emas — bot bir necha shaklni sinab, ishlaganini eslab qoladi |
@@ -345,6 +346,45 @@ Mijoz botga shaxsiy chatda mahsulot nomi, SKU yoki shtrix-kodini yozadi — bot 
 - Havola: `https://t.me/<bot>?start=w_<product_id>` — to'g'ridan-to'g'ri mahsulot kartochkasini ochadi.
 - Kunlik hisobotda: "🔔 Kelganda xabar ber: bugun N obuna, M kishiga xabar, kutayotganlar K".
 
+### 📢 2-kanal (ustama narx bilan)
+
+Ikkinchi kanal: barcha postlar unga ham chiqadi, lekin narx **ustama foiz** bilan. Narx faqat post matnida o'zgaradi — BITO'ga hech narsa yozilmaydi. 1-kanal(lar), istoriyalar va guruhlarda BITO narxi qoladi. Telefon raqami va "🛒 Buyurtma berish" tugmasi ikkala kanalda bir xil.
+
+**Ulash:** Admin panel → **📢 2-kanal ulash** → kanal `@username` yoki `-100...` ID si.
+- Bot tekshiradi: `getChat`, so'ng `getChatMember`. Bot kanalda admin bo'lishi va "Xabar joylash" (`can_post_messages`) huquqi bo'lishi kerak. Bo'lmasa aniq yozadi: "Bot @kanal da admin emas" yoki "Bot @kanal da post yozish huquqi yo'q".
+- Guruh yoki 1-kanallardan biri 2-kanal bo'la olmaydi.
+- Sozlama Redis settings'da saqlanadi: `channel2 = { id, title, username, enabled, markup_percent }`.
+
+**2-kanal bo'limidagi tugmalar:**
+- holat (kanal nomi, ✅/❌);
+- **✅/❌ Yoqish/O'chirish**;
+- **📈 Ustama: 30%** — 0–500 oralig'idagi butun son;
+- **🔁 Almashtirish** — ustama saqlanib qoladi;
+- **🗑 Uzish** — tasdiq so'raladi.
+
+O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmalarda ham, matn javoblarida ham. Boshqa adminlar bo'limni faqat ko'radi.
+
+**Narx:** `narx2 = floor(asl × (1 + p/100) / 1000 + 0.5) × 1000` — eng yaqin minglikka, yarmi yuqoriga yaxlitlanadi.
+
+| Asl narx | Ustama | 2-kanal narxi |
+|---|---|---|
+| 16 049 | 0% | 16 000 |
+| 15 600 | 0% | 16 000 |
+| 15 470 | 0% | 15 000 |
+| 12 345 | 30% | 16 000 |
+
+- 0 yoki manfiy narx o'zgarmaydi (0). Musbat narx 0 ga aylanmaydi, eng kami 1 000.
+- Chegirmali postda eski (ustidan chizilgan) narxga ham, chegirmali narxga ham ustama qo'shiladi, keyin yaxlitlanadi.
+
+**Qaysi postlar 2-kanalga ketadi:** 2-kanal yoqilgan bo'lsa — kunlik 16:00 random, 15 daqiqalik yangi mahsulot, chegirma, "🔄 Qayta keldi", SKU bo'yicha post, qo'lda random, sotilmayotganlar chegirma posti. Hammasi `postToChannels` orqali o'tadi.
+- 1-kanal faol bo'lmasa ham 2-kanalga chiqadi.
+- 2-kanal xatosi 1-kanal va istoriyalarni to'xtatmaydi. Muvaffaqiyatsiz post 2-kanalning alohida navbatiga tushadi va keyingi tekshiruvlarda yana yuboriladi (jami 3 urinish).
+- Adminga "📢 2-kanal ❌ sabab" xabari keladi (bir xil xato soatiga 1 marta).
+- Dedupe alohida: bitta avtomatik post 12 soat ichida 2-kanalga ikki marta chiqmaydi. 1-kanal qayta yuborilganda ham 2-kanalda takror bo'lmaydi.
+- Qo'lda joylashdan keyingi javobda "📢 2-kanal (…, +30%): ✅" yoki "❌ sabab" qatori bor. "Qayta keldi" hisobotida "2-kanal ✅/❌". Kunlik hisobotda 2-kanal postlari soni.
+
+**Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" yoziladi. "🧪 Test" ikkala ko'rinishni faqat adminga yuboradi.
+
 ### 🛒 Bot ichida buyurtma
 
 Postlardagi, kartochkalardagi va "🔔 keldi" xabaridagi **"🛒 Buyurtma berish"** tugmasi botni ochadi (`https://t.me/<bot>?start=o_<product_id>`). Bot so'raydi:
@@ -527,6 +567,10 @@ Tugaganda: "✅ Tekshiruv tugadi: 5627 ta mahsulot tekshirildi. ❌ Tugagan: N t
 - **Telegram:** 10 soniyalik timeout; rasm yuboradigan metodlar (sendPhoto, albom, story) uchun 30 soniya (erta uzish dublikat postga olib kelishi mumkin).
 - **Redis** ulanishi modul darajasida bir marta ochiladi va keyingi so'rovlarda qayta ishlatiladi.
 - **sharp** (rasmni story uchun 1080×1920 ga moslash) faqat story yuborilayotganda yuklanadi.
+
+## Testlar
+
+`npm test` — narx funksiyasining unit testlari (`test/channel2.test.js`, `node --test`, qo'shimcha paketsiz).
 
 ## Eslatmalar
 
