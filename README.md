@@ -170,6 +170,27 @@ Botga SKU yozing — bitta (`670899`) yoki bir nechta, vergul yoki probel bilan 
 - **🧪 Test (faqat menga)** — xuddi kanaldagidek (rasm + caption + "Buyurtma" tugmasi), lekin faqat sizga yuboriladi
 - **❌ Bekor**
 
+**Asosiy admin (`5812004211`) uchun — manzillarni tanlash.** Yuqoridagi tugmalar o'rniga har bir manzil alohida ✅/⬜ tugma bo'ladi. Bosilganda belgi almashadi va o'sha xabar yangilanadi (`editMessageReplyMarkup`):
+
+- har bir kanal: "📢 1-kanal: <nomi>";
+- 2-kanal: "📢 2-kanal: <nomi> (+30%)" — ustama narx, o'z telefoni va tugmasi bilan;
+- bot admin bo'lgan har bir guruh (ombor guruhi va boshqalar) va bot admin qilingan kanallar;
+- har bir istoriya profili: "📱 @Mixpodarok0307".
+
+Pastdagi tugmalar:
+- **🚀 Joylash (N ta manzil)** — hech narsa tanlanmagan bo'lsa "Kamida 1 ta manzil tanlang" chiqadi;
+- **🧪 Test (faqat menga)** — 2-kanal tanlangan bo'lsa, uning ko'rinishi ham yuboriladi;
+- **❌ Bekor**.
+
+Qanday ishlaydi:
+- **Standart tanlov:** oxirgi marta tanlangan to'plam (Redis'da eslab qolinadi). Birinchi marta — faol kanallar, 2-kanal va barcha istoriya profillari.
+- **Bir nechta SKU** yuborilsa, tanlov hammasiga qo'llanadi.
+- **Hisobot** har manzil bo'yicha chiqadi, masalan: "1-kanal: @kanal ✅, 2-kanal: @kanal2 (+30%) ✅, Ombor ✅, @Mixpodarok0307 ✅, @Shtabfoto ❌ <sabab>". Bir nechta mahsulot bo'lsa "2/2" kabi soni ham yoziladi.
+- **Faqat tanlangan manzillarga** joylanadi. Vaqt yetmagani umumiy navbatga qo'yilmaydi, chunki u tanlanmagan kanallarga ham chiqib ketardi.
+- **Statistika:** kanal statistikasi har mahsulot uchun bir marta sanaladi.
+- **Callback'lar** qisqa indeks bilan (`sel:p:<id>:<i>`, 64 baytdan oshmaydi); tanlov holati Redis sessiyasida saqlanadi.
+- **Boshqa adminlar** odatdagi tugmalarni ko'radi.
+
 Qo'lda joylash takror tekshiruvini chetlab o'tadi (avval yuborilgan bo'lsa ham joylanadi, faqat eslatma chiqadi). Rasmsiz yoki narxsiz mahsulot joylanmaydi — bot ogohlantiradi. Topilmagan SKU'lar ham ro'yxatda ko'rsatiladi.
 
 ### 🎲 Random joylash
