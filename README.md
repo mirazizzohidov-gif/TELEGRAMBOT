@@ -391,6 +391,53 @@ O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmal
 
 **Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" va "📞 2-kanal telefoni: … · 🛒 tugma: …" yoziladi. "🧪 Test" ikkala ko'rinishni (har biri o'z telefoni va tugmasi bilan) faqat adminga yuboradi.
 
+### 👥 Yordamchi adminlar (post joylovchilar)
+
+Admin panel → **👥 Yordamchi adminlar**. Faqat asosiy admin `5812004211` boshqaradi (`CHANNEL2_OWNER_ID`).
+
+**Bo'limda:**
+- **➕ Qo'shish** — Telegram ID (ixtiyoriy ism bilan: `123456789 Ali`) yoki shu odamdan forward qilingan xabar. Profilini yashirgan odamning forward'idan ID olib bo'lmaydi — bot ID so'raydi. Adminni yordamchi qilib bo'lmaydi.
+- **Ro'yxat**, har yordamchi uchun:
+  - **📍 Manzil** — aynan BITTA kanal yoki guruh, bot admin bo'lganlar ro'yxatidan ("Sana bo'yicha yuborish"dagi kabi);
+  - **✅/❌ faol**;
+  - **✏️ Ism**;
+  - **🗑 O'chirish** — tasdiq so'raladi.
+- Yordamchi botga bir marta `/start` bosishi kerak: bot birinchi bo'lib yoza olmaydi.
+
+**Yordamchi nima qila oladi:** faqat post yaratadi. Admin panel, sozlamalar va admin tugmalari unga ishlamaydi. Botda unga **📝 Post yaratish** tugmasi chiqadi.
+
+**Post bosqichlari** (har birida **❌ Bekor**):
+1. rasm (photo yoki rasm-fayl; fayl bo'lsa bot uni rasmga aylantiradi);
+2. mahsulot nomi (≤ 200 belgi);
+3. SKU;
+4. narx (`185000`, `185 000`, `185 000 so'm` — hammasi qabul qilinadi).
+
+Keyin preview: **✅ Joylash** / **✏️ Tahrirlash** (rasm, nom, SKU yoki narxni alohida o'zgartirish) / **❌ Bekor**.
+
+**✅ Joylash** bosilgach post asosiy admin tasdiqisiz darhol yordamchining manziliga ketadi. Shablon:
+
+```
+🆕 YANGI MAHSULOT
+
+🛍 Mahsulot nomi: <nom>
+🔖 SKU: <sku>
+💰 Narxi: 185 000 so'm
+
+📞 Buyurtma uchun murojaat qiling: <telefon>
+[🛒 Buyurtma berish]
+```
+
+**Narx, telefon va tugma:**
+- Manzil **2-kanal** bo'lsa — ustama narx, 2-kanal telefoni va tugmasi.
+- **Boshqa manzilda** — 1-kanal telefoni va tugmasi, narx o'zgarmaydi.
+
+**Qoidalar:**
+- Manzil tanlanmagan bo'lsa yordamchiga "Asosiy admin hali manzil tanlamagan" deyiladi.
+- Nom va SKU HTML sifatida escape qilinadi (injection'dan himoya).
+- Bir bosish = bitta post: qayta bosilsa yoki webhook takrorlansa ikki marta chiqmaydi.
+
+**Har joylashdan keyin** asosiy adminga nusxa keladi: "👤 <ism> joyladi → <manzil>: <nom>, SKU …" va postning o'zi. Joylanmasa (masalan bot huquqi yo'q) yordamchiga sabab va **🔁 Qayta urinish** chiqadi, asosiy adminga "❗ … joylay olmadi" xabari boradi.
+
 ### 📅 Sana bo'yicha yuborish
 
 Admin panel → **📅 Sana bo'yicha yuborish**. Faqat admin `5812004211` ishlata oladi (`CHANNEL2_OWNER_ID`).
