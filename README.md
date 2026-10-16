@@ -1,6 +1,6 @@
 # BITO Telegram bot (Vercel)
 
-BITO'dagi mahsulotlarni Telegram kanallarga va Telegram Business story'ga joylovchi bot. Telegram ichida admin panel bor. Yangi mahsulotlar va chegirmalar har 15 daqiqada avtomatik joylanadi, har kuni 16:00 da tasodifiy mahsulotlar albomi chiqadi.
+BITO'dagi mahsulotlarni Telegram kanallarga va Telegram Business story'ga joylovchi bot. Telegram ichida admin panel bor. Yangi mahsulotlar va chegirmalar har 15 daqiqada avtomatik joylanadi, har kuni 16:00 da tasodifiy mahsulotlar chiqadi. Kanallarga har mahsulot **alohida post** bo'lib chiqadi (rasm + to'liq matn + "🛒 Buyurtma berish" tugmasi), albom ishlatilmaydi.
 
 ## Endpointlar
 
@@ -8,7 +8,7 @@ BITO'dagi mahsulotlarni Telegram kanallarga va Telegram Business story'ga joylov
 |---|---|---|
 | `POST /api/webhook` | `X-Telegram-Bot-Api-Secret-Token` | Telegram update'lari (admin panel, biznes ulanishlar) |
 | `GET /api/setup-webhook` | `x-secret` | Webhook'ni o'rnatadi (bir marta chaqiriladi) |
-| `GET /api/cron/daily` | `CRON_SECRET` yoki `x-secret` | Har kuni 16:00 Toshkent (11:00 UTC, Vercel cron): random albom + kunlik hisobot |
+| `GET /api/cron/daily` | `CRON_SECRET` yoki `x-secret` | Har kuni 16:00 Toshkent (11:00 UTC, Vercel cron): kunlik random + kunlik hisobot |
 | `GET /api/cron/tick` | `CRON_SECRET` yoki `x-secret` | Har 15 daqiqa: yangi mahsulotlar, chegirmalar, navbat |
 | `POST /api/send` | `x-secret` | Bitta mahsulotni kanalga qo'lda yuborish |
 | `POST /api/story` | `x-secret` | Bitta mahsulotni story qilib joylash |
@@ -61,9 +61,9 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `BUSINESS_CONNECTION_ID` | yo'q | Story uchun biznes ulanish — faqat bazada hech qanday ulanish saqlanmagan bo'lsa ishlatiladi. Odatda kerak emas |
 | `STORY_DAILY_LIMIT` | yo'q | Yangi mahsulot story'lari kunlik limiti, standart `20` |
 | `DISCOUNT_STORY_DAILY_LIMIT` | yo'q | Chegirma story'lari kunlik limiti, standart `5` |
-| `RANDOM_ALBUM_SIZE` | yo'q | Kunlik random albomdagi mahsulotlar soni, standart `8` (2–10) |
+| `RANDOM_ALBUM_SIZE` | yo'q | Kunlik randomdagi mahsulotlar soni, standart `8` (2–10) |
 | `TICK_MAX_POSTS` | yo'q | Bitta tick'da kanalga yuboriladigan maksimal post, standart `10` |
-| `RANDOM_REPEAT_DAYS` | yo'q | Random albomda mahsulot necha kun takrorlanmaydi, standart `7` |
+| `RANDOM_REPEAT_DAYS` | yo'q | Random'da mahsulot necha kun takrorlanmaydi, standart `7` |
 
 Limit o'zgaruvchilari faqat standart qiymat — admin paneldagi "⚙️ Limitlar" bo'limida o'zgartirilgan qiymat bazada saqlanadi va ustun turadi.
 | `PROTECT_CONTENT` | yo'q | Standart: yoqilgan (postlarni forward/saqlab bo'lmaydi). O'chirish: `false` |
@@ -121,14 +121,12 @@ Admin panel menyusi (`⚙️ Admin panel`):
 
 | Tugma | Vazifasi |
 |---|---|
-| 🎲 Random albom ✅/❌ | Har kuni 16:00 da 8 ta tasodifiy mahsulotni joylash |
+| 🎲 Kunlik random 16:00 ✅/❌ | Har kuni 16:00 da 8 ta tasodifiy mahsulotni joylash (har biri alohida post) |
 | 🎲 Random → story ✅/❌ | Kunlik random'dagi har bir mahsulot story qilib ham joylanadi |
-| 🎲 Random ko'rinishi: Alohida / Albom | Random postlar kanalga qanday chiqadi. **Alohida** (standart) — har bir mahsulot alohida post, ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan. **Albom** — 10 talik albomlar va undan keyin tugmali qisqa xabar |
 | 🆕 Yangi mahsulot → kanal ✅/❌ | Yangi mahsulotlarni kanallarga joylash |
 | 🆕 Yangi mahsulot → story ✅/❌ | Yangi mahsulotlar uchun story |
 | 🔥 Chegirma → kanal ✅/❌ | Chegirma va "✅ Yana sotuvda" postlarini kanallarga joylash |
 | 🔥 Chegirma → story ✅/❌ | Chegirma uchun story |
-| Albom rejimi ✅/❌ | Bir vaqtda 2+ yangi mahsulot chiqsa, albom qilib yuboradi (10 tadan) |
 | ⚙️ Limitlar | Kunlik va tick limitlari (pastda) |
 | 📸 Istoriya profillari | Har profil holati (✅ / ❌ admin o'chirgan / ⚪️ ulanish o'chiq yoki story ruxsati yo'q, bugungi soni), ✅/❌ toggle, **🧪 Test istoriya** (tasdiqlagandan keyin oxirgi rasmli mahsulot barcha ✅ profillarga 6 soatga) |
 | 🚫 Random qora ro'yxat | Random'dan butunlay chiqarilgan mahsulotlar; bosib qaytarish mumkin |
@@ -140,7 +138,7 @@ Admin panel menyusi (`⚙️ Admin panel`):
 | 🔄 Qayta kelganlarni avtopost | Ombor skaneri qoldiq 0 → >0 ni aniqlaganda kanal posti + story (pastda), standart yoqilgan |
 | 📊 Bugungi hisobot | Bugungi statistika |
 
-Standart holat: kanalga yuborish (yangi va chegirma) yoqilgan; story'lar, random albom va albom rejimi o'chiq.
+Standart holat: kanalga yuborish (yangi va chegirma) yoqilgan; story'lar va kunlik random o'chiq.
 
 Bosh menyuda qisqa holat: navbatdagilar, bugun kanalga joylanganlar, **📱 Bugun story: X/limit** va chegirma story'lari.
 
@@ -152,7 +150,7 @@ Tugmani bosing va yangi sonni yozing. Qiymat bazada saqlanadi; noto'g'ri son yoz
 |---|---|---|
 | 📱 Story kunlik limiti (yangi mahsulotlar) | 20 | 0–100 |
 | 🔥 Chegirma story kunlik limiti | 5 | 0–100 |
-| 🎲 Random albomdagi mahsulotlar | 8 | 2–10 |
+| 🎲 Kunlik randomdagi mahsulotlar | 8 | 2–10 |
 | 📤 Bir tick'da max post | 10 | 1–50 |
 | 🔁 Random takrorlanmaslik (kun) | 7 | 0–60 |
 | 🔄 Qayta keldi: takrorlanmaslik (kun) | 7 | 1–60 |
@@ -163,9 +161,9 @@ Tugmani bosing va yangi sonni yozing. Qiymat bazada saqlanadi; noto'g'ri son yoz
 
 ### SKU bilan qo'lda joylash
 
-Botga SKU yozing — bitta (`670899`) yoki bir nechta, vergul yoki probel bilan (`670899, 670868 670870`, 30 tagacha). Bot mahsulotlarni BITO'dan topib, kanalda qanday ko'rinishini ko'rsatadi (bir nechta bo'lsa — albom, 10 tadan) va tugmalar beradi:
+Botga SKU yozing — bitta (`670899`) yoki bir nechta, vergul yoki probel bilan (`670899, 670868 670870`, 30 tagacha). Bot mahsulotlarni BITO'dan topib, kanalda qanday ko'rinishini ko'rsatadi (har mahsulot alohida post) va tugmalar beradi:
 
-- **📢 Kanalga joylash** — faol kanallarga (2+ bo'lsa albom + "🛒 Buyurtma berish" xabari)
+- **📢 Kanalga joylash** — faol kanallarga, har mahsulot alohida post ("🛒 Buyurtma berish" tugmasi bilan), 3 soniya oraliq
 - **📱 Story** — har bir mahsulot uchun story
 - **📢+📱 Ikkalasi**
 - **🧪 Test (faqat menga)** — xuddi kanaldagidek (rasm + caption + "Buyurtma" tugmasi), lekin faqat sizga yuboriladi
@@ -181,7 +179,7 @@ Tugmani bosing → bot "Nechta mahsulot? (1-30)" deb so'raydi → son yozing. Bo
 - **🔄 Almashtirish** — o'rniga boshqa mos tasodifiy mahsulot qo'yiladi (shu post yangi rasm va caption bilan yangilanadi);
 - **🚫 Hech qachon** — mahsulot random qora ro'yxatiga yoziladi va boshqa hech qachon random'da (kunlik 16:00 random'da ham) tanlanmaydi.
 
-Oxirida bitta boshqaruv xabari: **Tanlangan: N ta** (har o'zgarishda yangilanadi) va tugmalar **📢 Kanalga**, **📱 Story**, **📢+📱 Ikkalasi**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (butunlay yangi tanlov), **❌ Bekor**. Joylash faqat qolgan mahsulotlarga tegishli. Kanalga "🎲 Random ko'rinishi" bo'yicha (alohida postlar yoki albom) chiqadi. Har bir preview o'z sessiya ID si bilan bazada saqlanadi, shuning uchun bir nechta preview bir-biriga aralashmaydi.
+Oxirida bitta boshqaruv xabari: **Tanlangan: N ta** (har o'zgarishda yangilanadi) va tugmalar **📢 Kanalga**, **📱 Story**, **📢+📱 Ikkalasi**, **🧪 Test (faqat menga)**, **🔄 Boshqa tanlash** (butunlay yangi tanlov), **❌ Bekor**. Joylash faqat qolgan mahsulotlarga tegishli. Kanalga har mahsulot alohida post bo'lib chiqadi. Har bir preview o'z sessiya ID si bilan bazada saqlanadi, shuning uchun bir nechta preview bir-biriga aralashmaydi.
 
 Qora ro'yxatni admin paneldagi **🚫 Random qora ro'yxat** bo'limida ko'rish va mahsulotni bosib random'ga qaytarish mumkin.
 
@@ -191,7 +189,7 @@ Qora ro'yxatni admin paneldagi **🚫 Random qora ro'yxat** bo'limida ko'rish va
 |---|---|
 | Yangi mahsulot (har 15 daqiqa) | "🆕 Yangi mahsulot → story" |
 | Chegirma | "🔥 Chegirma → story" (alohida limit) |
-| Kunlik random albom | "🎲 Random → story" |
+| Kunlik random | "🎲 Random → story" |
 | SKU bilan qo'lda | preview'dagi "📱 Story" yoki "📢+📱 Ikkalasi" |
 | 🎲 Random joylash | preview'dagi "📱 Story" yoki "📢+📱 Ikkalasi" |
 | 🚀 Hozir joylash | yangi mahsulot/chegirma kanal va story tugmalariga amal qiladi |
@@ -215,7 +213,7 @@ Yangi ulangan profil avtomatik ✅ bo'ladi. `/api/business-id` har ulanish uchun
 ### Har 15 daqiqa — `/api/cron/tick`
 
 1. **Yangi mahsulotlar.** Oxirgi tekshiruvdan beri BITO'ga qo'shilgan mahsulotlar olinadi (vaqt bazada `last_checked_at` sifatida saqlanadi; birinchi ishga tushishda faqat oxirgi 15 daqiqa). O'tkazib yuboriladiganlar: rasmsiz, narxsiz (narx yo'q yoki 0), qoldig'i 0 (barcha filiallar yig'indisi), takror (shu SKU avval boshqa mahsulot bilan yuborilgan). Narxi, rasmi yoki qoldig'i keyinroq kiritilgan mahsulotlar 2 soat davomida qayta tekshiriladi, shuning uchun ular ham chiqadi. Hech bir mahsulot ikki marta joylanmaydi.
-   - "Yangi mahsulot → kanal" yoqilgan bo'lsa — har biri alohida post (albom rejimida 2+ bo'lsa — albom).
+   - "Yangi mahsulot → kanal" yoqilgan bo'lsa — har biri alohida post.
    - **"🆕 Yangi mahsulot → guruh"** (admin panel, standart ❌): tanlangan guruhga kanaldagi bilan bir xil mijoz posti — "🆕 Yangi mahsulot!", rasm, nomi, narx, telefon va "🛒 Buyurtma berish" tugmasi. Faqat mijozga yaroqli mahsulotlar (rasmi, narxi, qoldig'i bor), har biri bir marta. Guruh tanlanganda bot unga sinov xabarini yozadi. Kanal "🆕 Yangi mahsulot → kanal" bilan alohida boshqariladi.
    - "Yangi mahsulot → story" yoqilgan bo'lsa — har biri uchun story, kunlik limitgacha. Limitdan oshganlari navbatda qoladi va ertasi kuni chiqadi.
 2. **Chegirma.** Bot kuzatayotgan oxirgi 200 ta mahsulot tekshiriladi (har tick'da 50 tadan, navbat bilan — 200 tasi taxminan soatda bir aylanadi). Chegirma ikki yo'l bilan aniqlanadi:
@@ -241,8 +239,8 @@ Telegram'da eski narx (`25 000`) ustidan chizilgan holda ko'rinadi. Eski narx no
 
 ### Har kuni 16:00 Toshkent — `/api/cron/daily`
 
-- **Random** ("🎲 Random albom" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga yuboriladi — standart bo'yicha **alohida postlar** (har biri ostida "🛒 Buyurtma berish" tugmasi, 3 soniya oraliq bilan); "🎲 Random ko'rinishi: Albom" bo'lsa — bitta albom va tugmali qisqa xabar. 280 soniyaga sig'maganlari kanal navbatiga o'tadi va keyingi tick'da joylanadi. Oxirgi 7 kunda (sozlanadi) random'da chiqqan va qora ro'yxatdagi mahsulotlar tanlanmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, albomdagi har bir mahsulot story qilib ham joylanadi (story limiti bilan).
-- **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, random albom, navbatda qolganlar.
+- **Random** ("🎲 Kunlik random 16:00" yoqilgan bo'lsa): rasmli, narxli va qoldig'i bor tasodifiy mahsulotlar (standart 8 ta, "⚙️ Limitlar"da 2–10) tanlanadi va har bir faol kanalga yuboriladi — har biri **alohida post** (rasm, to'liq matn, ostida "🛒 Buyurtma berish" tugmasi), 3 soniya oraliq bilan; albom yo'q. 280 soniyaga sig'maganlari kanal navbatiga o'tadi va keyingi tick'da joylanadi. Oxirgi 7 kunda (sozlanadi) random'da chiqqan va qora ro'yxatdagi mahsulotlar tanlanmaydi. Kuniga bir marta. "🎲 Random → story" yoqilgan bo'lsa, har bir mahsulot story qilib ham joylanadi (story limiti bilan).
+- **Kunlik hisobot** adminlarga: nechta yangi mahsulot topildi, nechtasi kanalga joylandi, nechtasi va nima sababdan o'tkazildi (rasmsiz / narxsiz / qoldiq 0 / takror), nechta story, chegirmalar (topildi / kanal / story), yana sotuvda, kunlik random, navbatda qolganlar.
 
 ## Chegirma narxi (BITO chegirmalari)
 
@@ -389,9 +387,60 @@ O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmal
 - Dedupe alohida: bitta avtomatik post 12 soat ichida 2-kanalga ikki marta chiqmaydi (random postlar bundan mustasno — ular 1-kanalda ham ataylab takrorlanadi). 1-kanal qayta yuborilganda ham 2-kanalda takror bo'lmaydi.
 - Qo'lda joylashdan keyingi javobda "📢 2-kanal (…, +30%): ✅" yoki "❌ sabab" qatori bor. "Qayta keldi" hisobotida "2-kanal ✅/❌". Kunlik hisobotda 2-kanal postlari soni.
 
-2-kanalga ketadigan barcha postlarda (albomdan keyingi "👇 Buyurtma" xabarida ham) shu telefon va tugma ishlatiladi. Keyinroq "📝" AI tavsif qo'shilganda ham post o'z telefoni va tugmasi bilan tahrirlanadi.
+2-kanalga ketadigan barcha postlarda shu telefon va tugma ishlatiladi. Keyinroq "📝" AI tavsif qo'shilganda ham post o'z telefoni va tugmasi bilan tahrirlanadi.
 
 **Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" va "📞 2-kanal telefoni: … · 🛒 tugma: …" yoziladi. "🧪 Test" ikkala ko'rinishni (har biri o'z telefoni va tugmasi bilan) faqat adminga yuboradi.
+
+### 📅 Sana bo'yicha yuborish
+
+Admin panel → **📅 Sana bo'yicha yuborish**. Faqat admin `5812004211` ishlata oladi (`CHANNEL2_OWNER_ID`).
+
+Bosqichlar:
+
+1. **Sana:** "Bugun", "Kecha" yoki "✏️ Sana yozish" (`DD.MM.YYYY`, Toshkent vaqti, kelajak sana emas).
+2. **Turi:**
+   - 🆕 **Yangi** — shu kuni BITO'da yaratilgan mahsulotlar;
+   - 🔄 **Qayta kelgan** — shu kuni ombor skaneri 0 → >0 deb qayd qilganlar (tarix 9 kun saqlanadi);
+   - **Ikkalasi** — ikkala ro'yxat; mahsulot ikkalasida bo'lsa "yangi" hisoblanadi.
+3. **Manzil — bittasi:** bot admin bo'lgan kanal va guruhlar ro'yxatidan, nomi bilan:
+   - 1-kanal(lar), 2-kanal;
+   - ombor va boshqa guruhlar;
+   - bot admin qilib qo'shilgan kanallar (`my_chat_member` orqali eslab qolinadi).
+4. **Tasdiq:**
+   - "Topildi: N ta (yangi X, qayta kelgan Y)" va o'tkaziladiganlar soni (sababi bilan);
+   - birinchi mahsulot qanday chiqishining namunasi;
+   - **✅ Yuborish** / **❌ Bekor**.
+
+Har mahsulot alohida post, format:
+
+```
+🆕 YANGI MAHSULOT            (yoki 🔄 YANA SOTUVDA!)
+
+🛍 Mahsulot nomi: ...
+🔢 SKU: ...
+💰 Narxi: 12 000 so'm          (chegirmada: <s>15 000</s> 12 000 so'm)
+
+📞 Buyurtma uchun murojaat qiling: <telefon>
+[🛒 Buyurtma berish]
+```
+
+Narx, telefon va tugma:
+- **2-kanalga** — ustama narx, 2-kanal telefoni va tugmasi.
+- **Boshqa manzilga** — BITO narxi, 1-kanal telefoni va tugmasi.
+
+Qaysi mahsulotlar o'tkaziladi:
+- rasmsiz;
+- narxsiz;
+- qoldig'i hozir 0.
+
+Yuborish:
+- **Avval tekshiruv:** bot manzilda admin ekani (kanalda "Xabar joylash" huquqi) tekshiriladi; bo'lmasa aniq xato chiqadi.
+- **Tezlik:** postlar orasida 3 soniya.
+- **Progress:** "📤 Yuborildi 12/40" xabari yangilanib turadi.
+- **Ko'p bo'lsa:** tugma bosilganda ~4 daqiqa ichida sig'ganicha yuboriladi (Vercel 300 s chegarasi). Qolgani har 15 daqiqalik tekshiruvda davom etadi. Telegram 429 bilan uzoq kutishni so'rasa ham shunday.
+- **Oxirida hisobot:** yuborildi N; o'tkazildi M — sabablari va SKU'lari bilan.
+- **Takrorlanmaslik:** sana + manzil + mahsulot bo'yicha eslab qolinadi (90 kun). Qayta bosilsa "allaqachon yuborilgan, yana yuborilsinmi?" deb so'raladi: **🔁 Ha, hammasini** yoki **➡️ Faqat yuborilmaganlarini**.
+- **Navbat:** bir vaqtda bitta yuborish ishlaydi.
 
 ### 🛒 Bot ichida buyurtma
 
@@ -582,6 +631,6 @@ Tugaganda: "✅ Tekshiruv tugadi: 5627 ta mahsulot tekshirildi. ❌ Tugagan: N t
 
 ## Eslatmalar
 
-- Kanal postlarida "🛒 Buyurtma berish" tugmasi bor. Albom (sendMediaGroup) tugmani qo'llamaydi, shuning uchun albomdan keyin tugmali qisqa xabar yuboriladi.
+- Kanal postlarida "🛒 Buyurtma berish" tugmasi bor. Kanallarga albom yuborilmaydi: albom tugmani qo'llamaydi, shuning uchun har mahsulot alohida post. Postlar orasida 3 soniya (kanal daqiqasiga ~20 post qabul qiladi); Telegram 429 bersa `retry_after` qadar kutiladi, vaqt yetmasa navbatga qaytadi. Eski "Albom rejimi" / "Random ko'rinishi: Albom" sozlamalari endi e'tiborga olinmaydi.
 - `vercel.json` funksiyalarga 300 soniya beradi (Fluid compute, yangi loyihalarda standart yoqilgan). Deploy shu sababli xato bersa, **Settings → Functions → Fluid Compute** ni yoqing.
 - Webhook o'rnatilgandan keyin `getUpdates` ishlamaydi — biznes ulanishlar bazaga webhook orqali yoziladi, `/api/business-id` ularni bazadan qaytaradi.
