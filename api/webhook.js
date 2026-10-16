@@ -2,7 +2,7 @@ import { handleUpdate } from '../lib/admin.js';
 import { runInBackground } from '../lib/background.js';
 import { readBody } from '../lib/request.js';
 import * as db from '../lib/store.js';
-import { webhookSecretToken } from '../lib/webhook-secret.js';
+import { webhookSecretTokens } from '../lib/webhook-secret.js';
 
 // Answers Telegram with 200 right away and does the work in the background (waitUntil). A slow
 // answer would make Telegram re-send the update and the action would run twice.
@@ -10,10 +10,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Use POST' });
   }
-  const token = webhookSecretToken();
-  if (!token || req.headers['x-telegram-bot-api-secret-token'] !== token) {
+  const tokens = webhookSecretTokens();
+  const got = req.headers['x-telegram-bot-api-secret-token'];
+  if (!tokens.length || !tokens.includes(got)) {
     return res.status(401).json({ ok: false, error: 'Unauthorized' });
   }
+  if (got !== tokens[0]) console.warn('webhook: the OLD secret token — call /api/setup-webhook, then remove SECRET_OLD');
   const update = readBody(req, res);
   if (!update) return;
   try {

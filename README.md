@@ -28,6 +28,7 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ha* | Muqobil: Vercel Marketplace'dagi Upstash beradigan o'zgaruvchilar |
 | `BITO_API_KEY` | ha | BITO integratsiya kaliti, `username:secret` ko'rinishida (`api-key` sarlavhasida yuboriladi) |
 | `BITO_PRICE_ID` | ha | Narx ro'yxati ID si (masalan, "Chakana (so'm)") |
+| `SECRET_OLD` | yo'q | Faqat `SECRET` almashtirilayotganda: eski qiymat vaqtincha ham qabul qilinadi (`x-secret`, webhook tokeni). Bo'sh bo'lsa e'tiborsiz. Almashtirib bo'lgach o'chiring |
 | `CRON_SECRET` | tavsiya | Vercel cron shu qiymatni `Authorization: Bearer ...` qilib yuboradi |
 | `WEBHOOK_SECRET` | yo'q | Webhook maxfiy kaliti. Bo'lmasa `SECRET` ishlatiladi. Faqat `A-Z a-z 0-9 _ -` bo'lmasa, uning SHA-256 xeshi ishlatiladi |
 | `BITO_API_URL` | yo'q | Standart: `https://api.bito.uz/integration-api/integration/api/v2` |
@@ -72,6 +73,26 @@ Limit o'zgaruvchilari faqat standart qiymat — admin paneldagi "⚙️ Limitlar
 \* Redis uchun bittasi yetarli. REST o'zgaruvchilari (Upstash/KV) bo'lsa `@upstash/redis` ishlatiladi, aks holda `REDIS_URL` orqali rasmiy `redis` (node-redis) paketi. Ikkala holatda ham bot bir xil ishlaydi. `REDIS_URL` ulanishi modul darajasida keshlanadi (har so'rovda yangi ulanish ochilmaydi), uzilib qolsa avtomatik qayta ulanadi.
 
 > Token, kalit va secret qiymatlarini hech qachon kodga yoki repo'ga yozmang — faqat Vercel env o'zgaruvchilarida saqlang.
+
+### `SECRET` ni almashtirish (to'xtovsiz)
+
+**`SECRET` qayerda ishlatiladi:**
+- `x-secret` sarlavhasi: `/api/setup-webhook`, `/api/send`, `/api/story`, `/api/business-id`. `/api/cron/tick` va `/api/cron/daily` uni ham, `Authorization: Bearer <CRON_SECRET>` ni ham qabul qiladi.
+- Telegram webhook `secret_token`: `WEBHOOK_SECRET` bo'lsa o'sha, bo'lmasa `SECRET` (faqat `A-Z a-z 0-9 _ -` bo'lmasa, uning SHA-256 xeshi).
+- Vercel cron (`/api/cron/daily`) faqat `CRON_SECRET` ni yuboradi, `SECRET` ni ishlatmaydi.
+
+**Tartib:**
+
+1. Vercel → Settings → Environment Variables:
+   - `SECRET_OLD` = hozirgi (eski) qiymat;
+   - `SECRET` = yangi qiymat.
+   - Redeploy. Endi eski va yangi qiymat ikkalasi ham qabul qilinadi — webhook ham, tick ham to'xtamaydi.
+2. `curl https://<loyiha>.vercel.app/api/setup-webhook -H "x-secret: <YANGI>"` — Telegram endi yangi token yuboradi. `WEBHOOK_SECRET` alohida bo'lsa, bu qadam shart emas.
+3. cron-job.org → `/api/cron/tick` vazifasidagi sarlavha: `x-secret: <YANGI>`. `Authorization: Bearer <CRON_SECRET>` ishlatilsa, o'zgartirish shart emas.
+4. `/api/send`, `/api/story` ni chaqiradigan boshqa joylarda ham yangi qiymatni qo'ying.
+5. Vercel logida `the OLD secret` ogohlantirishi chiqmay qo'ygach, `SECRET_OLD` ni o'chirib, redeploy qiling.
+
+`CRON_SECRET` ham oshkor bo'lgan bo'lsa: yangisini qo'yib redeploy qiling (Vercel cron o'zi yangisini yuboradi) va cron-job.org sarlavhasini yangilang.
 
 Admin panelda saqlangan sozlama (telefon, kanallar, havola, profil) env qiymatidan ustun turadi. Bazada bo'lmasa env qiymati ishlatiladi.
 
@@ -412,6 +433,24 @@ O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmal
 2-kanalga ketadigan barcha postlarda shu telefon va tugma ishlatiladi. Keyinroq "📝" AI tavsif qo'shilganda ham post o'z telefoni va tugmasi bilan tahrirlanadi.
 
 **Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" va "📞 2-kanal telefoni: … · 🛒 tugma: …" yoziladi. "🧪 Test" ikkala ko'rinishni (har biri o'z telefoni va tugmasi bilan) faqat adminga yuboradi.
+
+### 💾 Zaxira
+
+Admin panel → **💾 Zaxira**. Faqat admin `5812004211`.
+
+**Faylga nima kiradi va nima kirmaydi:**
+- **Kiradi:** sozlamalar (kanallar, 2-kanal, telefon/tugmalar, limitlar, barcha toggle'lar, logo sozlamalari, istoriya profillari tanlovi, shablon sozlamalari), yordamchi adminlar, guruhlar va bot admin kanallar, biznes ulanishlar (istoriya profillari), random qora ro'yxat, o'zingiz yozgan tavsiflar, yuklangan logo.
+- **Kirmaydi:** navbatlar, dedupe kalitlari, kesh, statistika, tarix, post ro'yxati, ombor ma'lumotlari, token va sekretlar. Sozlamada token/secret/api_key nomli kalit bo'lsa ham tashlab yuboriladi.
+
+**Tugmalar:**
+- **📥 Zaxira olish** — JSON fayl (`bot-zaxira-YYYY-MM-DD_HHMM.json`) sizga `sendDocument` bilan keladi.
+- **🕒 Har kuni 03:00** (standart ✅) — Toshkent vaqti bilan har kuni zaxira olinadi. Oxirgi 7 tasi Redis'da saqlanadi va sizga ovozsiz yuboriladi. Ro'yxatdagi **📂** tugmalari saqlangan zaxirani qayta yuboradi.
+- **📤 Tiklash:**
+  1. Zaxira faylini yuborasiz.
+  2. Bot nimalar o'zgarishini qisqacha ko'rsatadi.
+  3. **✅ Tiklash** bosilgach, avval joriy holat zaxiralanadi va sizga yuboriladi — shu fayl bilan orqaga qaytish mumkin. Keyin fayl yoziladi: har bir bo'lim to'liq almashtiriladi.
+
+Noto'g'ri fayl rad etiladi: JSON emas, boshqa format, boshqa versiya yoki buzilgan bo'lim.
 
 ### 🧰 Qo'shimcha funksiyalar
 
