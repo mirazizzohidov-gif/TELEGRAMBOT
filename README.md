@@ -47,7 +47,8 @@ Vercel → loyiha → **Settings → Environment Variables**. O'zgartirgandan ke
 | `CHANNEL2_OWNER_ID` | yo'q | "📢 2-kanal" ni ulash/o'zgartirish huquqi bor yagona admin, standart `5812004211` (u `ADMIN_IDS` da ham bo'lishi kerak) |
 | `UNSOLD_DAYS` | yo'q | "📉 Sotilmayotganlar": necha kun sotilmagan bo'lsa, standart `60`. Admin panelda o'zgartiriladi |
 | `REORDER_DAYS` | yo'q | "🛒 Buyurtma qilish kerak": qoldiq necha kunga yetsa ro'yxatga tushadi, standart `7`. Admin panelda o'zgartiriladi |
-| `BITO_SALES_PATH` | yo'q | BITO "sotuv mahsulot bo'yicha" hisoboti endpointi. Odatda kerak emas — bot bir necha shaklni sinab, ishlaganini eslab qoladi |
+| `BITO_SALES_PATH` | yo'q | Sotuv hisoboti endpointi (birinchi sinaladi). Standart `/reports/trade/by-product/pagin`, keyin `/reports/trade/items/pagin`. Odatda kerak emas |
+| `BITO_UNSOLD_PATH` | yo'q | Sotilmayotganlar hisoboti endpointi (birinchi sinaladi). Standart `/reports/sales/items/unsold-paging`. Odatda kerak emas |
 | `BITO_RESPONSIBLE_ID` | yo'q | Bot buyurtmasini BITO'da ham yaratish (sinov) uchun mas'ul xodim ID si |
 | `BITO_ORDER_STATE` | yo'q | BITO'da yaratiladigan buyurtma holati, standart `new` |
 | `BITO_ORGANIZATION_ID` | yo'q | Mahsulotda filial topilmasa BITO buyurtmasi uchun filial ID si |
@@ -516,7 +517,21 @@ BITO "sotuv — mahsulot bo'yicha" hisobotidan:
 - **🛒 Buyurtma qilish kerak** — oxirgi 14 kunda kamida 2 dona sotilgan va qoldig'i shu tezlikda N kundan (standart 7) kamga yetadigan mahsulotlar: qoldiq, kuniga necha dona, necha kunga yetadi. Har kuni ombor ro'yxati vaqtida avtomatik hisobot guruhiga (yoki adminlarga) keladi — **🛒 Har kuni ro'yxat bilan: ✅/❌**.
 - **📈 Haftalik hisobot** — har dushanba adminlarga: hafta sotuvi (so'm, dona), tugagan va qayta kelganlar soni, buyurtma qilish kerak / sotilmayotganlar soni, eng ko'p sotilgan 10 ta, Gemini yoqilgan bo'lsa qisqa AI xulosasi. "📈 Haftalik hisobot (hozir)" bilan istalgan vaqtda.
 
-Hisobot endpointi bir necha shaklda sinaladi va ishlagani eslab qolinadi; topilmasa xato aniq yoziladi va keyingi tick'da qayta urinadi.
+**Endpointlar** (BITO Integration API, docs.bito.uz/api/report-sales.html — yo'l `/reports/...`, ko'plikda; hammasi POST):
+
+| Nima uchun | Endpoint |
+|---|---|
+| Sotuv (buyurtma qilish kerak, haftalik hisobot, sotilmayotganlar zaxira usuli) | `/reports/trade/by-product/pagin` (keyin `/reports/trade/items/pagin`) |
+| 📉 Sotilmayotganlar | `/reports/sales/items/unsold-paging` |
+
+- **So'rov tanasi:** `{ page, limit: 200, date_from, date_to, from_date, to_date }`. Sanalar Toshkent vaqtida (`…T00:00:00+05:00` / `…T23:59:59+05:00`); `from_date` / `to_date` ehtiyot uchun qo'shimcha yuboriladi.
+- **Javob:** `{ data: { list, total } }` yoki `{ data: { data, total, total_amounts | total_data } }` — ikkalasi ham o'qiladi.
+- **Sotuv qatorlari moslashuvchan o'qiladi:**
+  - har bir sotilgan qator: `{ amount, total_price, product: { _id, name } }` — bekor qilinganlari tashlanadi;
+  - yoki mahsulot jami: `{ product_id, product_name, items_sold, items_refunded, net_sales }`;
+  - ikkala holatda ham bot mahsulot bo'yicha o'zi qo'shib chiqadi.
+- **Sotilmayotganlar:** hisobotdan `quantity > 0` va `items_sold = 0` bo'lgan qatorlar olinadi. SKU va narx ombor yozuvlaridan to'ldiriladi, "omborda N kun" ham ko'rsatiladi. Bu hisobot ishlamasa yoki filtrlamasa (hamma qatorda sotuv bor), ro'yxat sotuv hisobotidan hisoblanadi: sotuvda bor, lekin davrda sotilmagan.
+- `BITO_SALES_PATH` / `BITO_UNSOLD_PATH` berilsa, ular birinchi sinaladi. Ishlagan yo'l eslab qolinadi; topilmasa xato aniq yoziladi (har bir yo'l va BITO javobi) va keyingi tick'da qayta urinadi.
 
 ### 🔄 Qayta keldi — avtopost
 
