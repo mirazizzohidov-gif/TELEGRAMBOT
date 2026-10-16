@@ -392,6 +392,86 @@ O'zgartirishni faqat admin `5812004211` qila oladi (`CHANNEL2_OWNER_ID`), tugmal
 
 **Preview / Test:** oldindan ko'rishda postning tagida "📢 2-kanal narxi (+30%): …" va "📞 2-kanal telefoni: … · 🛒 tugma: …" yoziladi. "🧪 Test" ikkala ko'rinishni (har biri o'z telefoni va tugmasi bilan) faqat adminga yuboradi.
 
+### 🧰 Qo'shimcha funksiyalar
+
+Admin panel → **🧰 Qo'shimcha funksiyalar**. Har biri alohida ✅/❌; o'zgartirishni faqat admin `5812004211` qila oladi. **🩺 Holat**ni istalgan admin ko'radi.
+
+#### ❌ Sotildi belgisi (standart ✅)
+
+**Post ro'yxati.** Bot har bir kanal postini mahsulotga bog'lab, 90 kun eslab qoladi (`product_id → [{ chat, message_id, caption, … }]`). Ro'yxatga quyidagilar kiradi:
+- 1-kanal va 2-kanal postlari;
+- "Sana bo'yicha yuborish" postlari;
+- yordamchi postlari, agar SKU BITO'dagi mahsulotga mos kelsa.
+
+**Mahsulot tugaganda** (ombor skaneri qoldiq >0 → 0 ni ko'radi) o'sha postlar `editMessageCaption` bilan o'zgartiriladi:
+- matn boshiga **"❌ SOTILDI"** qo'shiladi;
+- "🛒 Buyurtma berish" tugmasi olib tashlanadi.
+
+**Qayta kelganda** asl matn va tugma qaytariladi.
+
+**Qoidalar:**
+- Bir tekshiruvda ko'pi bilan 30 ta tahrir qilinadi, qolgani navbatda kutadi.
+- "message is not modified" xatosi e'tiborsiz qoldiriladi. "message to edit not found" bo'lsa (post o'chirilgan), post ro'yxatdan jim olib tashlanadi.
+- Telegram 429 bersa, qolgani keyingi tekshiruvda qilinadi.
+- Faqat funksiya yoqilgandan keyin joylangan postlar kuzatiladi.
+
+#### 💲 Narx yangilash (standart ✅)
+
+- **Qanday tekshiriladi:** har tekshiruvda posti bor 10 ta mahsulot navbat bilan BITO'dan tekshiriladi — narx ro'yxati (`BITO_PRICE_ID`) va chegirmalar.
+- **Narx o'zgarsa** postlardagi narx qatori yangilanadi:
+  - 2-kanalda ustama qayta hisoblanadi;
+  - chegirma bo'lsa `<s>eski</s> → yangi` formati saqlanadi;
+  - chegirma tugasa "🔥 CHEGIRMA!" sarlavhasi olib tashlanadi.
+- **Cheklov:** bitta post soatiga ko'pi bilan 1 marta tahrirlanadi.
+- **Tegilmaydi:** yordamchilar qo'lda yozgan narx o'zgartirilmaydi.
+- **Hisobot:** kunlik hisobotda "💲 Narx yangilandi: N post · ❌ Sotildi belgisi: M post" qatori chiqadi.
+
+#### #️⃣ Heshteglar (standart ✅)
+
+Post oxiriga, telefondan keyin, BITO kategoriyasidan heshteg qo'shiladi: mahsulotning o'z kategoriyasi va uning asosiy (eng yuqori) kategoriyasi. Masalan: `#Ayollar_sumkasi #Sumkalar`.
+
+Qoidalar:
+- bo'shliq va tire `_` ga almashadi; apostrof va boshqa belgilar olib tashlanadi;
+- lotin va kirill harflari hamda raqamlar qoladi;
+- ko'pi bilan 2 ta heshteg, har biri 30 belgigacha;
+- "Kategoriyasiz" mahsulotga heshteg qo'yilmaydi;
+- istoriyalarga qo'shilmaydi.
+
+#### 🖼 Logo (kanal standart ✅, istoriya standart ❌)
+
+**Qayerga:** kanal va guruhga ketadigan rasmlarning burchagiga yarim shaffof belgi qo'yiladi (`sharp`). Bu barcha avtomatik va qo'lda postlarga, "Sana bo'yicha yuborish"ga va yordamchi postlariga tegishli.
+
+**Belgi:**
+- **Standart:** oq "MIX PODAROK" yozuvi, soyasi bilan, rasm enining ~18%. Oldindan PNG qilib chizilgan, shuning uchun serverda shrift kerak emas.
+- **🖼 Logo yuklash:** o'z PNG logongizni fayl qilib yuborasiz (500 KB gacha, Redis'da saqlanadi). **↩️ Standart logo** — o'chiradi.
+
+**Sozlamalar:**
+- 📍 joylashuv — 4 burchakdan biri;
+- 🌫 ko'rinish — 30–80%;
+- 🧪 **Logo namunasi** — eng yangi mahsulot rasmida qanday chiqishini ko'rsatadi.
+
+**Ishlash tartibi:**
+- Bitta rasm bir marta chiziladi va yuklanadi; boshqa kanallarga o'sha `file_id` ketadi.
+- Rasmni yuklash yoki chizishda xato bo'lsa, asl rasm yuboriladi.
+
+#### 🩺 Holat (kunlik holat standart ✅)
+
+**Har kuni 08:55 dan keyingi birinchi tekshiruvda** adminlarga kechagi kun uchun "🩺 Kunlik holat" keladi:
+- postlar (1-kanal / 2-kanal / yordamchilar / sana bo'yicha);
+- istoriya — har profil bo'yicha ✅ va ❌ soni;
+- yangi mahsulot, chegirma, qayta keldi;
+- sotildi belgisi, narx yangilash;
+- xatolar soni va oxirgi 3 ta xato matni;
+- oxirgi muvaffaqiyatli tekshiruv vaqti;
+- BITO javob vaqti (o'rtacha).
+
+**Darhol "⚠️" ogohlantirish** (bir xil ogohlantirish soatiga 1 marta):
+- 45 daqiqa davomida tekshiruv (tick) bo'lmasa — keyingi tekshiruvda aniqlanadi;
+- bir profilga istoriya ketma-ket 3 marta ketmasa;
+- BITO 3 ta tekshiruvda ketma-ket xato qaytarsa (javob yo'q yoki 5xx).
+
+Admin paneldagi **🩺 Holat** tugmasi bugungi holatni darhol ko'rsatadi. **🩺 Kunlik holat: ❌** kunlik xabarni ham, ogohlantirishlarni ham o'chiradi.
+
 ### 👥 Yordamchi adminlar (post joylovchilar)
 
 Admin panel → **👥 Yordamchi adminlar**. Faqat asosiy admin `5812004211` boshqaradi (`CHANNEL2_OWNER_ID`).
