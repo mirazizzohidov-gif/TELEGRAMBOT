@@ -9,6 +9,7 @@
     "api/bito-orders.js": { "maxDuration": 60 }
   },
   "crons": [
-    { "path": "/api/cron/daily", "schedule": "0 11 * * *" }
+    { "path": "/api/cron/daily", "schedule": "0 11 * * *" },
+    { "path": "/api/bito-orders", "schedule": "* * * * *" }
   ]
 }

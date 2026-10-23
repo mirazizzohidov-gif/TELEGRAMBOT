@@ -32,7 +32,7 @@ globalThis.fetch = async (url, opts = {}) => {
   return { ok: false, status: 404, text: async () => JSON.stringify({ code: 404, message: 'no' }) };
 };
 
-const { formatBitoOrder, notifyBitoOrder, pollBitoOrders } = await import('../lib/bito-orders.js');
+const { acceptBitoOrder, formatBitoOrder, notifyBitoOrder, pollBitoOrders } = await import('../lib/bito-orders.js');
 
 const sentTo = () => calls.filter((c) => c.method === 'sendMessage').map((c) => String(c.body.chat_id));
 
@@ -125,4 +125,15 @@ test('poll: first sight is silent, the next new order goes to each group and adm
   const third = await pollBitoOrders();
   assert.equal(third.notified, 0);
   assert.equal(sentTo().length, 0);
+});
+
+test('dedupe: the minute cron and the tick backup send one order once', async () => {
+  calls = [];
+  failChats = new Set();
+  const settings = { bito_order_notify: true, bito_order_chats: ['-100111'], bito_order_admins: ['42'] };
+  const order = { _id: 'race-1', number: '8', customer: { name: 'Race' }, total_price: 1000 };
+  const [a, b] = await Promise.all([acceptBitoOrder(order, settings), acceptBitoOrder(order, settings)]);
+  assert.deepEqual(sentTo(), ['-100111', '42']);
+  assert.equal([a, b].filter((r) => r.sent?.length).length, 1);
+  assert.equal([a, b].filter((r) => r.skipped === 'duplicate').length, 1);
 });
