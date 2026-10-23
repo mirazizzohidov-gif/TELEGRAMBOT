@@ -32,11 +32,18 @@ globalThis.fetch = async (url, opts = {}) => {
   if (String(url).includes('api.telegram.org')) {
     const method = url.split('/').pop();
     const body = opts.body instanceof FormData
-      ? { form: true, chat_id: opts.body.get('chat_id'), caption: opts.body.get('caption'), photo: opts.body.get('photo') }
+      ? {
+          form: true,
+          chat_id: opts.body.get('chat_id'),
+          caption: opts.body.get('caption'),
+          photo: opts.body.get('photo'),
+          media: opts.body.get('media') ? JSON.parse(opts.body.get('media')) : undefined,
+          files: [...opts.body.keys()].filter((k) => /^p\d+$/.test(k)),
+        }
       : JSON.parse(opts.body || '{}');
     calls.push({ method, body });
     const chatId = String(body.chat_id);
-    if (failChats.has(chatId) || (method === 'sendPhoto' && failPhoto.has(chatId))) {
+    if (failChats.has(chatId) || ((method === 'sendPhoto' || method === 'sendMediaGroup') && failPhoto.has(chatId))) {
       return { json: async () => ({ ok: false, error_code: 403, description: 'bot is not a member of the chat' }) };
     }
     return { json: async () => ({ ok: true, result: { message_id: calls.length } }) };
@@ -49,7 +56,7 @@ globalThis.fetch = async (url, opts = {}) => {
   return { ok: false, status: 404, text: async () => JSON.stringify({ code: 404, message: 'no' }) };
 };
 
-const { COLLAGE_MAX, acceptBitoOrder, buildOrderCollage, formatBitoOrder, keepBitoOrdersFresh, notifyBitoOrder, orderPhotoChoice, pollBitoOrders } = await import('../lib/bito-orders.js');
+const { PHOTO_MAX, acceptBitoOrder, collectOrderImageUrls, formatBitoOrder, keepBitoOrdersFresh, notifyBitoOrder, orderImageUrls, pollBitoOrders } = await import('../lib/bito-orders.js');
 
 const sentTo = () => calls.filter((c) => c.method === 'sendMessage').map((c) => String(c.body.chat_id));
 
@@ -144,77 +151,127 @@ test('poll: first sight is silent, the next new order goes to each group and adm
   assert.equal(sentTo().length, 0);
 });
 
-test('collage choice: none, one photo, or one grid of up to 4', async () => {
-  assert.deepEqual(orderPhotoChoice({ number: '1', products: [{ name: 'Krujka', amount: 1 }] }), { choice: 'none', urls: [] });
-  const one = orderPhotoChoice({ products: [{ product: { name: 'Krujka', image: '/files/krujka.jpg' }, amount: 1 }] });
-  assert.equal(one.choice, 'one');
-  assert.equal(one.urls.length, 1);
-  assert.match(one.urls[0], /^https:\/\/api\.bito\.uz\/upload-api\/public\/files\/krujka\.jpg$/);
-  const many = orderPhotoChoice({
+test('photos: every image on a line, up to 10, secret query strings skipped', async () => {
+  assert.deepEqual(orderImageUrls({ number: '1', products: [{ name: 'Krujka', amount: 1 }] }), []);
+  const one = orderImageUrls({ products: [{ product: { name: 'Krujka', image: '/files/krujka.jpg' }, amount: 1 }] });
+  assert.deepEqual(one, ['https://api.bito.uz/upload-api/public/files/krujka.jpg']);
+  const many = orderImageUrls({
     products: [
-      { image: 'https://img.test/1.jpg' },
-      { product: { image_url: 'https://img.test/2.jpg' } },
-      { images: ['https://img.test/1.jpg'] },
+      {
+        images: ['https://img.test/1.jpg', 'https://img.test/2.jpg'],
+        photo: { file: '/files/from-file.jpg' },
+        photos: [{ src: 'https://img.test/3.jpg' }, { path: 'https://img.test/1.jpg' }],
+      },
+      { product: { image_url: 'https://img.test/4.jpg', image: { url: 'https://img.test/5.jpg' } } },
       { image: 'https://cdn.example/a.jpg?token=secret' },
-      { image_url: 'https://img.test/3.jpg' },
-      { image: 'https://img.test/4.jpg' },
-      { image: 'https://img.test/5.jpg' },
+      { image_url: { path: 'https://img.test/6.jpg' } },
     ],
   });
-  assert.equal(many.choice, 'many');
-  assert.equal(many.urls.length, COLLAGE_MAX);
-  assert.deepEqual(many.urls, ['https://img.test/1.jpg', 'https://img.test/2.jpg', 'https://img.test/3.jpg', 'https://img.test/4.jpg']);
-  assert.equal(many.urls.some((u) => u.includes('secret')), false);
+  assert.deepEqual(many, [
+    'https://img.test/1.jpg',
+    'https://img.test/2.jpg',
+    'https://api.bito.uz/upload-api/public/files/from-file.jpg',
+    'https://img.test/3.jpg',
+    'https://img.test/5.jpg',
+    'https://img.test/4.jpg',
+    'https://img.test/6.jpg',
+  ]);
+  assert.equal(many.some((u) => /token|secret/i.test(u)), false);
+  const eleven = orderImageUrls({
+    products: Array.from({ length: 11 }, (_, i) => ({ image: `https://img.test/${i + 1}.jpg` })),
+  });
+  assert.equal(eleven.length, PHOTO_MAX);
+  assert.equal(eleven[0], 'https://img.test/1.jpg');
+  assert.equal(eleven.at(-1), 'https://img.test/10.jpg');
 
-  const colors = ['#c04040', '#4080c0', '#40a060', '#e0c040'];
-  const bufs = await Promise.all(colors.map((c) => jpegOf(c)));
-  const grid = await buildOrderCollage(bufs);
-  const meta = await sharp(grid).metadata();
-  assert.equal(meta.format, 'jpeg');
-  assert.equal(meta.width, 480 * 2 + 8);
-  assert.equal(meta.height, 480 * 2 + 8);
+  let loads = 0;
+  const fromProduct = await collectOrderImageUrls(
+    { products: [{ product_id: 'pid-1', product: { name: 'Krujka' }, amount: 2 }] },
+    async (id) => {
+      loads += 1;
+      assert.equal(id, 'pid-1');
+      return { image: '/files/krujka.jpg', images: ['https://img.test/2.jpg', 'https://img.test/2.jpg'] };
+    },
+  );
+  assert.equal(loads, 1);
+  assert.deepEqual(fromProduct, ['https://api.bito.uz/upload-api/public/files/krujka.jpg', 'https://img.test/2.jpg']);
+  const skipped = await collectOrderImageUrls(
+    { products: [{ product_id: 'pid-2', image: 'https://img.test/1.jpg', amount: 1 }] },
+    async () => {
+      throw new Error('should not load a line that already has a photo');
+    },
+  );
+  assert.deepEqual(skipped, ['https://img.test/1.jpg']);
 });
 
-test('notify photo: one image is that photo, many is one collage, a failed photo falls back to text', async () => {
+test('notify photo: one photo plus the full text, an album of the rest, a failed album falls back to text', async () => {
   const settings = { bito_order_notify: true, bito_order_chats: ['-100111', '-100222'], bito_order_admins: [] };
   calls = [];
   failChats = new Set();
   failPhoto = new Set();
-  await notifyBitoOrder({ _id: 'p1', customer: { name: 'Ali' }, products: [{ product: { name: 'Krujka', image: 'https://img.test/1.jpg' }, amount: 1 }] }, settings);
+  const oneResult = await notifyBitoOrder({ _id: 'p1', customer: { name: 'Ali' }, products: [{ product: { name: 'Krujka', image: 'https://img.test/1.jpg' }, amount: 1 }] }, settings);
+  assert.equal(oneResult.photo, 'one');
   const one = calls.filter((c) => c.method === 'sendPhoto');
   assert.equal(one.length, 2);
-  assert.equal(calls.some((c) => c.method === 'sendMediaGroup'), false);
-  assert.equal(calls.some((c) => c.method === 'sendMessage'), false);
-  assert.equal(one[0].body.photo, 'https://img.test/1.jpg');
-  assert.match(one[0].body.caption, /Ali/);
-  assert.match(one[0].body.caption, /Krujka — 1 dona/);
+  assert.equal(calls.filter((c) => c.method === 'sendMediaGroup').length, 0);
+  assert.equal(calls.filter((c) => c.method === 'sendMessage').length, 2);
+  assert.equal(one[0].body.form, true);
+  assert.equal(typeof one[0].body.photo, 'object');
+  assert.match(one[0].body.caption, /Yangi BITO buyurtma #p1/);
+  assert.equal(one[0].body.caption.includes('Krujka'), false);
+  const oneText = calls.find((c) => c.method === 'sendMessage').body.text;
+  assert.match(oneText, /Ali/);
+  assert.match(oneText, /Krujka — 1 dona/);
 
   calls = [];
-  await notifyBitoOrder({
+  const album = await notifyBitoOrder({
     _id: 'p2',
     customer: { name: 'Vali' },
     products: [
-      { name: 'A', image: 'https://img.test/1.jpg', amount: 1 },
-      { name: 'B', image: 'https://img.test/2.jpg', amount: 2 },
+      { name: 'A', images: ['https://img.test/1.jpg', 'https://img.test/2.jpg'], amount: 1 },
+      { name: 'B', image: 'https://img.test/3.jpg', amount: 2 },
     ],
   }, settings);
-  const many = calls.filter((c) => c.method === 'sendPhoto');
-  assert.equal(many.length, 2);
-  assert.equal(many[0].body.form, true);
-  assert.equal(typeof many[0].body.photo, 'object');
-  assert.match(many[0].body.caption, /Vali/);
-  assert.equal(calls.some((c) => c.method === 'sendMediaGroup'), false);
+  assert.equal(album.photo, 'album');
+  const groups = calls.filter((c) => c.method === 'sendMediaGroup');
+  assert.equal(groups.length, 2);
+  assert.equal(calls.some((c) => c.method === 'sendPhoto'), false);
+  assert.equal(groups[0].body.media.length, 3);
+  assert.deepEqual(groups[0].body.files, ['p0', 'p1', 'p2']);
+  assert.match(groups[0].body.media[0].caption, /#p2/);
+  assert.equal(groups[0].body.media[1].caption, undefined);
+  const albumText = calls.find((c) => c.method === 'sendMessage').body.text;
+  assert.match(albumText, /Vali/);
+  assert.match(albumText, /A — 1 dona/);
+  assert.match(albumText, /B — 2 dona/);
 
   calls = [];
   failPhoto = new Set(['-100222']);
-  const result = await notifyBitoOrder({ _id: 'p3', customer: { name: 'Sora' }, products: [{ image: 'https://img.test/1.jpg', amount: 1 }] }, settings);
+  const result = await notifyBitoOrder({
+    _id: 'p3',
+    customer: { name: 'Sora' },
+    products: [
+      { image: 'https://img.test/1.jpg', amount: 1 },
+      { image: 'https://img.test/2.jpg', amount: 1 },
+    ],
+  }, settings);
   assert.deepEqual(result.sent, ['-100111', '-100222']);
   assert.equal(result.failed.length, 0);
-  assert.equal(calls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === '-100111').length, 1);
-  assert.equal(calls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === '-100222').length, 1);
-  assert.equal(calls.filter((c) => c.method === 'sendMessage' && c.body.chat_id === '-100222').length, 1);
-  assert.match(calls.find((c) => c.method === 'sendMessage').body.text, /Sora/);
+  assert.equal(calls.filter((c) => c.method === 'sendMediaGroup' && c.body.chat_id === '-100111').length, 1);
+  assert.equal(calls.filter((c) => c.method === 'sendMediaGroup' && c.body.chat_id === '-100222').length, 1);
+  assert.equal(calls.filter((c) => c.method === 'sendMessage').length, 2);
+  assert.match(calls.find((c) => c.method === 'sendMessage' && c.body.chat_id === '-100222').body.text, /Sora/);
   failPhoto = new Set();
+
+  calls = [];
+  const none = await notifyBitoOrder({
+    _id: 'p4',
+    customer: { name: 'Noor' },
+    products: [{ name: 'A', image: 'https://img.test/missing.jpg', amount: 1 }],
+  }, settings);
+  assert.equal(none.photo, 'none');
+  assert.equal(calls.filter((c) => c.method === 'sendMessage').length, 2);
+  assert.equal(calls.some((c) => c.method === 'sendPhoto' || c.method === 'sendMediaGroup'), false);
 });
 
 test('dedupe: the tick and GET /api/bito-orders send one order once', async () => {
