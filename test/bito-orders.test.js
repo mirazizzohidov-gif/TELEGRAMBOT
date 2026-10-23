@@ -11,15 +11,32 @@ const store = await import('../lib/store.js');
 const redis = new MemRedis();
 store.setRedis(redis);
 
+const sharp = (await import('sharp')).default;
+const jpegOf = (color) => sharp({ create: { width: 30, height: 20, channels: 3, background: color } }).jpeg().toBuffer();
+const photos = {
+  'https://img.test/1.jpg': await jpegOf('#c04040'),
+  'https://img.test/2.jpg': await jpegOf('#4080c0'),
+  'https://img.test/3.jpg': await jpegOf('#40a060'),
+};
+
 let calls = [];
 let orders = [];
 let details = {};
 let failChats = new Set();
+let failPhoto = new Set();
 globalThis.fetch = async (url, opts = {}) => {
+  if (photos[url]) {
+    const jpeg = photos[url];
+    return { ok: true, status: 200, arrayBuffer: async () => jpeg.buffer.slice(jpeg.byteOffset, jpeg.byteOffset + jpeg.byteLength) };
+  }
   if (String(url).includes('api.telegram.org')) {
-    const body = JSON.parse(opts.body || '{}');
-    calls.push({ method: url.split('/').pop(), body });
-    if (failChats.has(String(body.chat_id))) {
+    const method = url.split('/').pop();
+    const body = opts.body instanceof FormData
+      ? { form: true, chat_id: opts.body.get('chat_id'), caption: opts.body.get('caption'), photo: opts.body.get('photo') }
+      : JSON.parse(opts.body || '{}');
+    calls.push({ method, body });
+    const chatId = String(body.chat_id);
+    if (failChats.has(chatId) || (method === 'sendPhoto' && failPhoto.has(chatId))) {
       return { json: async () => ({ ok: false, error_code: 403, description: 'bot is not a member of the chat' }) };
     }
     return { json: async () => ({ ok: true, result: { message_id: calls.length } }) };
@@ -32,7 +49,7 @@ globalThis.fetch = async (url, opts = {}) => {
   return { ok: false, status: 404, text: async () => JSON.stringify({ code: 404, message: 'no' }) };
 };
 
-const { acceptBitoOrder, formatBitoOrder, keepBitoOrdersFresh, notifyBitoOrder, pollBitoOrders } = await import('../lib/bito-orders.js');
+const { COLLAGE_MAX, acceptBitoOrder, buildOrderCollage, formatBitoOrder, keepBitoOrdersFresh, notifyBitoOrder, orderPhotoChoice, pollBitoOrders } = await import('../lib/bito-orders.js');
 
 const sentTo = () => calls.filter((c) => c.method === 'sendMessage').map((c) => String(c.body.chat_id));
 
@@ -125,6 +142,79 @@ test('poll: first sight is silent, the next new order goes to each group and adm
   const third = await pollBitoOrders();
   assert.equal(third.notified, 0);
   assert.equal(sentTo().length, 0);
+});
+
+test('collage choice: none, one photo, or one grid of up to 4', async () => {
+  assert.deepEqual(orderPhotoChoice({ number: '1', products: [{ name: 'Krujka', amount: 1 }] }), { choice: 'none', urls: [] });
+  const one = orderPhotoChoice({ products: [{ product: { name: 'Krujka', image: '/files/krujka.jpg' }, amount: 1 }] });
+  assert.equal(one.choice, 'one');
+  assert.equal(one.urls.length, 1);
+  assert.match(one.urls[0], /^https:\/\/api\.bito\.uz\/upload-api\/public\/files\/krujka\.jpg$/);
+  const many = orderPhotoChoice({
+    products: [
+      { image: 'https://img.test/1.jpg' },
+      { product: { image_url: 'https://img.test/2.jpg' } },
+      { images: ['https://img.test/1.jpg'] },
+      { image: 'https://cdn.example/a.jpg?token=secret' },
+      { image_url: 'https://img.test/3.jpg' },
+      { image: 'https://img.test/4.jpg' },
+      { image: 'https://img.test/5.jpg' },
+    ],
+  });
+  assert.equal(many.choice, 'many');
+  assert.equal(many.urls.length, COLLAGE_MAX);
+  assert.deepEqual(many.urls, ['https://img.test/1.jpg', 'https://img.test/2.jpg', 'https://img.test/3.jpg', 'https://img.test/4.jpg']);
+  assert.equal(many.urls.some((u) => u.includes('secret')), false);
+
+  const colors = ['#c04040', '#4080c0', '#40a060', '#e0c040'];
+  const bufs = await Promise.all(colors.map((c) => jpegOf(c)));
+  const grid = await buildOrderCollage(bufs);
+  const meta = await sharp(grid).metadata();
+  assert.equal(meta.format, 'jpeg');
+  assert.equal(meta.width, 480 * 2 + 8);
+  assert.equal(meta.height, 480 * 2 + 8);
+});
+
+test('notify photo: one image is that photo, many is one collage, a failed photo falls back to text', async () => {
+  const settings = { bito_order_notify: true, bito_order_chats: ['-100111', '-100222'], bito_order_admins: [] };
+  calls = [];
+  failChats = new Set();
+  failPhoto = new Set();
+  await notifyBitoOrder({ _id: 'p1', customer: { name: 'Ali' }, products: [{ product: { name: 'Krujka', image: 'https://img.test/1.jpg' }, amount: 1 }] }, settings);
+  const one = calls.filter((c) => c.method === 'sendPhoto');
+  assert.equal(one.length, 2);
+  assert.equal(calls.some((c) => c.method === 'sendMediaGroup'), false);
+  assert.equal(calls.some((c) => c.method === 'sendMessage'), false);
+  assert.equal(one[0].body.photo, 'https://img.test/1.jpg');
+  assert.match(one[0].body.caption, /Ali/);
+  assert.match(one[0].body.caption, /Krujka — 1 dona/);
+
+  calls = [];
+  await notifyBitoOrder({
+    _id: 'p2',
+    customer: { name: 'Vali' },
+    products: [
+      { name: 'A', image: 'https://img.test/1.jpg', amount: 1 },
+      { name: 'B', image: 'https://img.test/2.jpg', amount: 2 },
+    ],
+  }, settings);
+  const many = calls.filter((c) => c.method === 'sendPhoto');
+  assert.equal(many.length, 2);
+  assert.equal(many[0].body.form, true);
+  assert.equal(typeof many[0].body.photo, 'object');
+  assert.match(many[0].body.caption, /Vali/);
+  assert.equal(calls.some((c) => c.method === 'sendMediaGroup'), false);
+
+  calls = [];
+  failPhoto = new Set(['-100222']);
+  const result = await notifyBitoOrder({ _id: 'p3', customer: { name: 'Sora' }, products: [{ image: 'https://img.test/1.jpg', amount: 1 }] }, settings);
+  assert.deepEqual(result.sent, ['-100111', '-100222']);
+  assert.equal(result.failed.length, 0);
+  assert.equal(calls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === '-100111').length, 1);
+  assert.equal(calls.filter((c) => c.method === 'sendPhoto' && c.body.chat_id === '-100222').length, 1);
+  assert.equal(calls.filter((c) => c.method === 'sendMessage' && c.body.chat_id === '-100222').length, 1);
+  assert.match(calls.find((c) => c.method === 'sendMessage').body.text, /Sora/);
+  failPhoto = new Set();
 });
 
 test('dedupe: the tick and GET /api/bito-orders send one order once', async () => {
