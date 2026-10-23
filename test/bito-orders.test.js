@@ -32,7 +32,7 @@ globalThis.fetch = async (url, opts = {}) => {
   return { ok: false, status: 404, text: async () => JSON.stringify({ code: 404, message: 'no' }) };
 };
 
-const { acceptBitoOrder, formatBitoOrder, notifyBitoOrder, pollBitoOrders } = await import('../lib/bito-orders.js');
+const { acceptBitoOrder, formatBitoOrder, keepBitoOrdersFresh, notifyBitoOrder, pollBitoOrders } = await import('../lib/bito-orders.js');
 
 const sentTo = () => calls.filter((c) => c.method === 'sendMessage').map((c) => String(c.body.chat_id));
 
@@ -136,4 +136,38 @@ test('dedupe: the tick and GET /api/bito-orders send one order once', async () =
   assert.deepEqual(sentTo(), ['-100111', '42']);
   assert.equal([a, b].filter((r) => r.sent?.length).length, 1);
   assert.equal([a, b].filter((r) => r.skipped === 'duplicate').length, 1);
+});
+
+test('loop: polls once a minute, then hands off, and a second copy stays out', async () => {
+  await store.updateSettings({ bito_order_notify: true, bito_order_chats: ['-100111'], bito_order_admins: ['42'] });
+  let t = 0;
+  const sleeps = [];
+  const kicks = [];
+  const result = await keepBitoOrdersFresh({
+    now: () => t,
+    sleep: async (ms) => {
+      sleeps.push(ms);
+      t += ms;
+    },
+    kick: async () => {
+      kicks.push(1);
+      return { status: 200 };
+    },
+    interval: 60_000,
+    budget: 150_000,
+  });
+  assert.equal(result.polls, 3);
+  assert.deepEqual(sleeps, [60_000, 60_000]);
+  assert.equal(kicks.length, 1);
+
+  await store.lock('bito-order-loop', 150);
+  const busy = await keepBitoOrdersFresh({
+    now: () => 0,
+    sleep: async () => {},
+    kick: async () => ({ status: 200 }),
+    budget: 1,
+  });
+  assert.equal(busy.skipped, 'running');
+  assert.equal(busy.polls, 0);
+  await store.unlock('bito-order-loop');
 });

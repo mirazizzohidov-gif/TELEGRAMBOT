@@ -2,7 +2,8 @@
 // POST with an order object announces that order. Same secret as the cron routes. A destination
 // that rejects the message does not fail the request.
 
-import { acceptBitoOrder, pollBitoOrders } from '../lib/bito-orders.js';
+import { waitUntil } from '@vercel/functions';
+import { acceptBitoOrder, keepBitoOrdersFresh } from '../lib/bito-orders.js';
 import { checkCron, readBody } from '../lib/request.js';
 import { hasRedis } from '../lib/store.js';
 
@@ -26,7 +27,12 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, id: result.id || null, sent: result.sent || [], failed: result.failed || [], skipped: result.skipped || null });
       }
     }
-    return res.status(200).json({ ok: true, ...(await pollBitoOrders()) });
+    const job = keepBitoOrdersFresh().catch((err) => {
+      console.error('bito order loop', err);
+      return { error: err.message || String(err) };
+    });
+    waitUntil(job);
+    return res.status(200).json({ ok: true, loop: true });
   } catch (err) {
     console.error('bito-orders', err);
     return res.status(err.status || 500).json({ ok: false, error: err.message });
