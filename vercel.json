@@ -5,7 +5,8 @@
     "api/send.js": { "maxDuration": 300 },
     "api/story.js": { "maxDuration": 300 },
     "api/setup-webhook.js": { "maxDuration": 60 },
-    "api/business-id.js": { "maxDuration": 60 }
+    "api/business-id.js": { "maxDuration": 60 },
+    "api/bito-orders.js": { "maxDuration": 300 }
   },
   "crons": [
     { "path": "/api/cron/daily", "schedule": "0 11 * * *" }
