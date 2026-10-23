@@ -13,7 +13,8 @@ export default async function handler(req, res) {
   }
   try {
     const result = await runTick();
-    // Backup for the every-minute /api/bito-orders cron. Dedupe keeps one order from being sent twice.
+    // BITO sale-order poll. Hobby allows only the daily cron, so this rides the existing 15-minute tick.
+    // GET /api/bito-orders runs the same poll. Dedupe keeps one order from being sent twice.
     // Off until an admin turns it on, and a failure here does not change the tick result.
     const bito_orders = await pollBitoOrders().catch((err) => {
       console.error('bito order notify', err.message || err);

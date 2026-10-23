@@ -127,7 +127,7 @@ test('poll: first sight is silent, the next new order goes to each group and adm
   assert.equal(sentTo().length, 0);
 });
 
-test('dedupe: the minute cron and the tick backup send one order once', async () => {
+test('dedupe: the tick and GET /api/bito-orders send one order once', async () => {
   calls = [];
   failChats = new Set();
   const settings = { bito_order_notify: true, bito_order_chats: ['-100111'], bito_order_admins: ['42'] };
