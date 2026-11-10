@@ -6,7 +6,7 @@ import { ROLES, addUser, can, listUsers, removeUser, renewUser, roleOf, setUserR
 import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from '../lib/audit.js';
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
-import { igCheckAccount, igClearQueue, igManual, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
+import { igCarouselNow, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
 
 // "📊 Dashboard": GET /api/dashboard?k=<key> -> the page; &format=json -> its data.
 // GET /api/dashboard?send=1 -> the secret link goes to the admins in Telegram (at most once a minute).
@@ -80,6 +80,10 @@ export default async function handler(req, res) {
       if (action === 'ig_check') return res.status(200).json(await igCheckAccount(String(body?.slot || '')));
       if (action === 'ig_search') return res.status(200).json(await igSearch(body?.q));
       if (action === 'ig_manual') return res.status(200).json(await igManual(body || {}));
+      if (action === 'ig_preview') return res.status(200).json(await igPreview(body || {}));
+      if (action === 'ig_carousel_now') return res.status(200).json(await igCarouselNow(String(body?.slot || '')));
+      if (action === 'ig_music_add') return res.status(200).json(await igMusicAdd(body?.name, body?.data));
+      if (action === 'ig_music_del') return res.status(200).json(await igMusicDel(body?.id));
       if (action === 'ig_clear') return res.status(200).json(await igClearQueue(String(body?.slot || '')));
       return res.status(400).json({ ok: false, error: 'Unknown action' });
     } catch (err) {
