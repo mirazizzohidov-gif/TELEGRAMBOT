@@ -80,3 +80,20 @@ test('enqueue per account settings, publish steps, daily limit', async () => {
   assert.equal(r2.stories, 1); // its story still goes (limit 5)
   assert.equal(r2.waiting, 1);
 });
+
+test('token: junk refused; EAA (Facebook) token -> graph.facebook.com, account found via its page', async () => {
+  mem.clear();
+  assert.match((await ig.igSetToken('a', '1598037721635354')).message, /Bu token emas/);
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(String(url).replace(/\?.*/, ''));
+    if (/facebook\.com\/v[\d.]+\/me\?/.test(url)) return { ok: true, status: 200, json: async () => ({ id: '999' }) };
+    if (/\/me\/accounts/.test(url)) return { ok: true, status: 200, json: async () => ({ data: [{ name: 'Page', instagram_business_account: { id: '1784', username: 'mixpodarok' } }] }) };
+    return { ok: false, status: 400, json: async () => ({ error: { message: 'x' } }) };
+  };
+  const r = await ig.igSetToken('a', ' "EAA' + 'x'.repeat(60) + '" ');
+  assert.equal(r.ok, true, r.message);
+  assert.ok(urls.every((u) => u.startsWith('https://graph.facebook.com/')));
+  const t = await store.redis().hget(store.K.flag('ig:tok'), 'a');
+  assert.deepEqual([t.user_id, t.username, t.host], ['1784', 'mixpodarok', 'fb']);
+});
