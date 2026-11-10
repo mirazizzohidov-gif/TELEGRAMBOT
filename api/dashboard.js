@@ -6,7 +6,7 @@ import { ROLES, addUser, can, listUsers, removeUser, renewUser, roleOf, setUserR
 import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from '../lib/audit.js';
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
-import { igCarouselNow, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
+import { igCarouselNow, igQueue, igQueueAction, igStats, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
 
 // "📊 Dashboard": GET /api/dashboard?k=<key> -> the page; &format=json -> its data.
 // GET /api/dashboard?send=1 -> the secret link goes to the admins in Telegram (at most once a minute).
@@ -84,6 +84,8 @@ export default async function handler(req, res) {
       if (action === 'ig_carousel_now') return res.status(200).json(await igCarouselNow(String(body?.slot || '')));
       if (action === 'ig_music_add') return res.status(200).json(await igMusicAdd(body?.name, body?.data));
       if (action === 'ig_music_del') return res.status(200).json(await igMusicDel(body?.id));
+      if (action === 'ig_queue_op') return res.status(200).json(await igQueueAction(body?.id, String(body?.op || '')));
+      if (action === 'ig_stats') return res.status(200).json(await igStats(String(body?.slot || '')).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'ig_clear') return res.status(200).json(await igClearQueue(String(body?.slot || '')));
       return res.status(400).json({ ok: false, error: 'Unknown action' });
     } catch (err) {
@@ -107,6 +109,13 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'sold') {
     try {
       return res.status(200).json({ ok: true, ...(await soldItems()) });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'igqueue') {
+    try {
+      return res.status(200).json(await igQueue());
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
