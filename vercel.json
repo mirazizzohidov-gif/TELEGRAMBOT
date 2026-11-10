@@ -26,6 +26,10 @@
     },
     "api/igimg.js": {
       "maxDuration": 60
+    },
+    "api/igvid.js": {
+      "maxDuration": 120,
+      "includeFiles": "{assets/fonts/**,node_modules/ffmpeg-static/ffmpeg}"
     }
   },
   "crons": [
@@ -33,5 +37,6 @@
       "path": "/api/cron/daily",
       "schedule": "0 11 * * *"
     }
-  ]
+  ],
+  "installCommand": "npm install --no-audit --no-fund"
 }
