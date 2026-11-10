@@ -61,6 +61,7 @@ test('enqueue per account settings, publish steps, daily limit', async () => {
   globalThis.fetch = async (url, init) => {
     const body = init?.body ? Object.fromEntries(new URLSearchParams(String(init.body))) : {};
     calls.push({ url: String(url).replace(/\?.*/, ''), body });
+    if (/warm=1/.test(url)) return { ok: true, status: 200, json: async () => ({ ok: true }) };
     if (/\/media$/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'C' + calls.length }) };
     if (/\/media_publish$/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'M1' }) };
     return { ok: true, status: 200, json: async () => ({ status_code: 'FINISHED' }) };
@@ -112,6 +113,7 @@ test('formats: Reels job + carousel collected and published when full; music in 
   globalThis.fetch = async (url, init) => {
     const body = init?.body ? Object.fromEntries(new URLSearchParams(String(init.body))) : {};
     calls.push({ url: String(url).replace(/\?.*/, ''), body });
+    if (/warm=1/.test(url)) return { ok: true, status: 200, json: async () => ({ ok: true }) };
     if (/\/media$/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'C' + calls.length }) };
     if (/\/media_publish$/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'M' }) };
     return { ok: true, status: 200, json: async () => ({ status_code: 'FINISHED' }) };
