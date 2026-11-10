@@ -97,3 +97,37 @@ test('token: junk refused; EAA (Facebook) token -> graph.facebook.com, account f
   const t = await store.redis().hget(store.K.flag('ig:tok'), 'a');
   assert.deepEqual([t.user_id, t.username, t.host], ['1784', 'mixpodarok', 'fb']);
 });
+
+test('formats: Reels job + carousel collected and published when full; music in turn', async () => {
+  mem.clear();
+  const s = { ig: { a: { on: true, types: { new: true }, formats: { photo: false, reels: true, carousel: true }, carousel_size: 2, max_reels: 5, stories_posts: false }, b: { on: false } } };
+  await store.redis().hset(store.K.flag('ig:tok'), { a: { token: 'TA', user_id: '11', refreshed_at: Date.now() } });
+  const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(20000)]).toString('base64');
+  assert.equal((await ig.igMusicAdd('Trek 1', wav)).ok, true);
+  assert.match((await ig.igMusicAdd('bad', Buffer.alloc(20000).toString('base64'))).message, /audio/);
+  for (const n of [1, 2]) await ig.igAfterPost({ ...item, type: 'new', fresh: true, old_price: null, sku: `20${n}`, product_id: `Q${n}` }, s);
+  const q = await store.redis().lrange(store.K.flag('igq'));
+  assert.deepEqual(q.map((j) => j.kind), ['reel', 'reel']);
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    const body = init?.body ? Object.fromEntries(new URLSearchParams(String(init.body))) : {};
+    calls.push({ url: String(url).replace(/\?.*/, ''), body });
+    if (/\/media$/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'C' + calls.length }) };
+    if (/\/media_publish$/.test(url)) return { ok: true, status: 200, json: async () => ({ id: 'M' }) };
+    return { ok: true, status: 200, json: async () => ({ status_code: 'FINISHED' }) };
+  };
+  const r = await ig.igTick(s, { deadline: Date.now() + 900000 });
+  assert.equal(r.reels, 2);
+  assert.equal(r.posted, 1); // the carousel
+  const media = calls.filter((c) => /\/media$/.test(c.url)).map((c) => c.body);
+  assert.equal(media.filter((b) => b.media_type === 'REELS').length, 2);
+  const v = new URL(media.find((b) => b.media_type === 'REELS').video_url);
+  assert.equal(v.pathname, '/api/igvid');
+  assert.ok(ig.igCheck(v.searchParams.get('d'), v.searchParams.get('s')));
+  assert.ok(ig.igDecodeVideo(v.searchParams.get('d')).m); // a track was picked
+  assert.equal(media.filter((b) => b.is_carousel_item === 'true').length, 2);
+  const parent = media.find((b) => b.media_type === 'CAROUSEL');
+  assert.equal(parent.children.split(',').length, 2);
+  assert.match(parent.caption, /1\. Hamyon.*\n2\. Hamyon/);
+  assert.equal(Number(await store.redis().llen(store.K.flag('igcar:a'))), 0);
+});
