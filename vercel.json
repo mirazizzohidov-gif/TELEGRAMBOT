@@ -38,5 +38,5 @@
       "schedule": "0 11 * * *"
     }
   ],
-  "installCommand": "npm install --no-audit --no-fund"
+  "installCommand": "npm install --no-audit --no-fund && node node_modules/ffmpeg-static/install.js"
 }
