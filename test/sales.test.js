@@ -132,3 +132,31 @@ test('unsold report missing or not filtering -> worked out from the sales report
   assert.equal(r.source, 'sales');
   assert.deepEqual(r.list.map((x) => x.pid), ['B']);
 });
+
+test('weekly report: last week vs the week before, profit only when asked, categories up / down', async () => {
+  reset();
+  const store2 = await import('../lib/store.js');
+  store2.setRedis({ get: async () => null, set: async () => 'OK', hgetall: async () => ({}), del: async () => 0, lrange: async () => [] });
+  const now = Date.parse('2026-11-09T09:30:00+05:00'); // Monday
+  routes['/reports/trade/by-product/pagin'] = (b) => {
+    const thisWeek = b.date_from.startsWith('2026-11-02');
+    return thisWeek
+      ? { list: [
+          { product_id: 'P1', product_name: 'Hamyon', category_name: 'Hamyonlar', items_sold: 10, net_sales: 500000, cost: 300000 },
+          { product_id: 'P2', product_name: 'Krujka', category_name: 'Krujkalar', items_sold: 2, net_sales: 100000, cost: 50000 },
+        ] }
+      : { list: [
+          { product_id: 'P1', product_name: 'Hamyon', category_name: 'Hamyonlar', items_sold: 5, net_sales: 250000, cost: 150000 },
+          { product_id: 'P2', product_name: 'Krujka', category_name: 'Krujkalar', items_sold: 6, net_sales: 300000, cost: 150000 },
+        ] };
+  };
+  const s = { ai_desc: false };
+  const plain = await sales.weeklyReport(s, { now });
+  assert.match(plain, /02\.11 — 08\.11/);
+  assert.match(plain, /Sotuv: <b>600[\s ,.]?000/);
+  assert.doesNotMatch(plain, /Foyda/);
+  assert.match(plain, /📈 Hamyonlar/);
+  assert.match(plain, /📉 Krujkalar/);
+  const owner = await sales.weeklyReport(s, { now, profit: true });
+  assert.match(owner, /Foyda: <b>250[\s ,.]?000/);
+});
