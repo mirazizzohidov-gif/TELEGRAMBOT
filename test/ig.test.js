@@ -49,7 +49,7 @@ test('signed photo links: only the bot\'s own signature works', () => {
 
 test('enqueue per account settings, publish steps, daily limit', async () => {
   mem.clear();
-  let s = { ig: { a: { on: true, types: { discount: true }, stories_posts: true, max_posts: 1, max_stories: 5 }, b: { on: true, types: { discount: false }, stories_queue: true } } };
+  let s = { ig: { a: { hours_from: '00:00', hours_to: '23:59', gap_min: 0, story_gap_min: 0, on: true, types: { discount: true }, stories_posts: true, max_posts: 1, max_stories: 5 }, b: { hours_from: '00:00', hours_to: '23:59', gap_min: 0, story_gap_min: 0, on: true, types: { discount: false }, stories_queue: true } } };
   await store.redis().hset(store.K.flag('ig:tok'), { a: { token: 'TA', user_id: '11', refreshed_at: Date.now() }, b: { token: 'TB', user_id: '22', refreshed_at: Date.now() } });
   await ig.igAfterPost(item, s);
   await ig.igAfterPost(item, s); // the same product the same day: not again
@@ -101,7 +101,7 @@ test('token: junk refused; EAA (Facebook) token -> graph.facebook.com, account f
 
 test('formats: Reels job + carousel collected and published when full; music in turn', async () => {
   mem.clear();
-  const s = { ig: { a: { on: true, types: { new: true }, formats: { photo: false, reels: true, carousel: true }, carousel_size: 2, max_reels: 5, stories_posts: false }, b: { on: false } } };
+  const s = { ig: { a: { hours_from: '00:00', hours_to: '23:59', gap_min: 0, story_gap_min: 0, on: true, types: { new: true }, formats: { photo: false, reels: true, carousel: true }, carousel_size: 2, max_reels: 5, stories_posts: false }, b: { on: false } } };
   await store.redis().hset(store.K.flag('ig:tok'), { a: { token: 'TA', user_id: '11', refreshed_at: Date.now() } });
   const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(20000)]).toString('base64');
   assert.equal((await ig.igMusicAdd('Trek 1', wav)).ok, true);
@@ -132,4 +132,26 @@ test('formats: Reels job + carousel collected and published when full; music in 
   assert.equal(parent.children.split(',').length, 2);
   assert.match(parent.caption, /1\. Hamyon.*\n2\. Hamyon/);
   assert.equal(Number(await store.redis().llen(store.K.flag('igcar:a'))), 0);
+});
+
+test('own source (not Telegram): window, gap between posts, queue: to the front / remove', async () => {
+  mem.clear();
+  const s = { ig: { a: { on: true, types: { new: true }, stories_posts: false, hours_from: '00:00', hours_to: '23:59', gap_min: 30 }, b: { on: false } } };
+  await store.redis().hset(store.K.flag('ig:tok'), { a: { token: 'TA', user_id: '11', refreshed_at: Date.now() } });
+  const items = [1, 2, 3].map((n) => ({ ...item, type: 'new', fresh: true, old_price: null, sku: `30${n}`, product_id: `R${n}`, tags: '#t' }));
+  await ig.igFromSource(items, s);
+  let q = await ig.igQueue();
+  assert.deepEqual(q.items.map((j) => j.sku), ['301', '302', '303']);
+  assert.equal((await ig.igQueueAction(q.items[2].id, 'top')).ok, true);
+  assert.equal((await ig.igQueueAction(q.items[1].id, 'del')).ok, true);
+  q = await ig.igQueue();
+  assert.deepEqual(q.items.map((j) => j.sku), ['303', '301']);
+  globalThis.fetch = async (url) => (/\/media$/.test(url) ? { ok: true, status: 200, json: async () => ({ id: 'C' }) } : /media_publish/.test(url) ? { ok: true, status: 200, json: async () => ({ id: 'M' }) } : { ok: true, status: 200, json: async () => ({ status_code: 'FINISHED' }) });
+  const r = await ig.igTick(s, { deadline: Date.now() + 900000 });
+  assert.equal(r.posted, 1); // 30 min between posts: one now, the next in a later tick
+  assert.equal(r.waiting, 1);
+  // outside the hours: nothing goes
+  const closed = { ig: { a: { ...s.ig.a, hours_from: '00:00', hours_to: '00:01', gap_min: 0 } } };
+  assert.equal(ig.inWindow(closed.ig.a, Date.parse('2026-11-10T12:00:00+05:00')), false);
+  assert.equal(ig.inWindow({ hours_from: '22:00', hours_to: '06:00' }, Date.parse('2026-11-10T23:30:00+05:00')), true);
 });
