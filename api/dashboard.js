@@ -74,7 +74,7 @@ export default async function handler(req, res) {
       if (action === 'audit_toggle') return res.status(200).json(await auditToggle(String(body?.type || ''), Boolean(body?.on)));
       if (action === 'audit_test') return res.status(200).json(await auditTest());
       if (action === 'audit_alerts') return res.status(200).json(await auditSetAlerts(body?.cfg || {}));
-      if (action === 'ig_token') return res.status(200).json(await igSetToken(String(body?.slot || ''), body?.token));
+      if (action === 'ig_token') return res.status(200).json(await igSetToken(String(body?.slot || ''), body?.token, body?.ig_id));
       if (action === 'ig_remove') return res.status(200).json(await igRemoveToken(String(body?.slot || '')));
       if (action === 'ig_cfg') return res.status(200).json(await igSetCfg(String(body?.slot || ''), body?.cfg || {}));
       if (action === 'ig_check') return res.status(200).json(await igCheckAccount(String(body?.slot || '')));
