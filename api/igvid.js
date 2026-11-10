@@ -2,11 +2,21 @@
 // "🎬 Namuna" preview. GET /api/igvid?d=<data>&s=<signature> -> MP4 (720x1280, 8 s, music).
 // Only links the bot signed work.
 import { igCheck, igDecodeVideo, igMusicGet } from '../lib/ig.js';
-import { buildReel, ffmpegCheck } from '../lib/igvideo.js';
+import { buildReel, ffmpegCheck, sampleReel } from '../lib/igvideo.js';
 import { errText } from '../lib/util.js';
 
 export default async function handler(req, res) {
   if (req.query?.check === '1') return res.status(200).json(await ffmpegCheck());
+  // a sample video (drawn product, no data of the shop): checks that the server can make Reels
+  if (req.query?.check === 'reel') {
+    try {
+      const mp4 = await sampleReel();
+      res.setHeader('Content-Type', 'video/mp4');
+      return res.status(200).send(mp4);
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: errText(e).slice(0, 300) });
+    }
+  }
   const d = String(req.query?.d || '');
   if (!igCheck(d, req.query?.s)) return res.status(403).send('Forbidden');
   const o = igDecodeVideo(d);
