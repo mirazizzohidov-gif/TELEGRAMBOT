@@ -1,0 +1,14 @@
+# "🐕 Zaxira tekshiruvchi": every 10 minutes asks the bot whether its 15-minute tick (cron-job.org) still
+# runs. If not (30+ minutes), the bot warns the admins and runs the tick itself. See api/cron/watchdog.js.
+name: watchdog
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Ping the bot
+        run: curl -sS -m 320 https://telegrambot-cic8.vercel.app/api/cron/watchdog || true
