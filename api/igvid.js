@@ -2,10 +2,11 @@
 // "🎬 Namuna" preview. GET /api/igvid?d=<data>&s=<signature> -> MP4 (720x1280, 8 s, music).
 // Only links the bot signed work.
 import { igCheck, igDecodeVideo, igMusicGet } from '../lib/ig.js';
-import { buildReel } from '../lib/igvideo.js';
+import { buildReel, ffmpegCheck } from '../lib/igvideo.js';
 import { errText } from '../lib/util.js';
 
 export default async function handler(req, res) {
+  if (req.query?.check === '1') return res.status(200).json(await ffmpegCheck());
   const d = String(req.query?.d || '');
   if (!igCheck(d, req.query?.s)) return res.status(403).send('Forbidden');
   const o = igDecodeVideo(d);
