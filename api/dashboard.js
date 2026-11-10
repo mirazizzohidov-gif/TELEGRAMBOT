@@ -6,6 +6,7 @@ import { ROLES, addUser, can, listUsers, removeUser, renewUser, roleOf, setUserR
 import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from '../lib/audit.js';
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
+import { igCheckAccount, igClearQueue, igRemoveToken, igSetCfg, igSetToken, igView } from '../lib/ig.js';
 
 // "📊 Dashboard": GET /api/dashboard?k=<key> -> the page; &format=json -> its data.
 // GET /api/dashboard?send=1 -> the secret link goes to the admins in Telegram (at most once a minute).
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
       }
     }
     const action = req.query?.action;
-    const adminOnly = String(action || '').startsWith('user_');
+    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role));
@@ -73,6 +74,11 @@ export default async function handler(req, res) {
       if (action === 'audit_toggle') return res.status(200).json(await auditToggle(String(body?.type || ''), Boolean(body?.on)));
       if (action === 'audit_test') return res.status(200).json(await auditTest());
       if (action === 'audit_alerts') return res.status(200).json(await auditSetAlerts(body?.cfg || {}));
+      if (action === 'ig_token') return res.status(200).json(await igSetToken(String(body?.slot || ''), body?.token));
+      if (action === 'ig_remove') return res.status(200).json(await igRemoveToken(String(body?.slot || '')));
+      if (action === 'ig_cfg') return res.status(200).json(await igSetCfg(String(body?.slot || ''), body?.cfg || {}));
+      if (action === 'ig_check') return res.status(200).json(await igCheckAccount(String(body?.slot || '')));
+      if (action === 'ig_clear') return res.status(200).json(await igClearQueue(String(body?.slot || '')));
       return res.status(400).json({ ok: false, error: 'Unknown action' });
     } catch (err) {
       return res.status(500).json({ ok: false, message: err.message });
@@ -95,6 +101,13 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'sold') {
     try {
       return res.status(200).json({ ok: true, ...(await soldItems()) });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'ig') {
+    try {
+      return res.status(200).json({ ok: true, ...(await igView()) });
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
