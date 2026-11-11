@@ -1,5 +1,6 @@
 // "📸 Instagram": the photo Instagram downloads for a post / story (lib/ig.js igImageUrl).
 // GET /api/igimg?d=<data>&s=<signature> -> JPEG: feed 1080x1080 (whole photo on white), story 1080x1920;
+// kind 'thumb': 320px WebP for the dashboard cards;
 // with the logo when "🖼 Logo" (feed) / "🖼 Logo → istoriya" (story) is on. Only links the bot signed work.
 import { igCheck, igDecode } from '../lib/ig.js';
 import { getSettingsSafe } from '../lib/store.js';
@@ -13,6 +14,14 @@ export default async function handler(req, res) {
   const o = igDecode(d);
   if (!o) return res.status(400).send('Bad request');
   try {
+    if (o.k === 'thumb') {
+      // dashboard cards: small WebP, cached by the CDN for a month
+      const sharp = (await import('sharp')).default;
+      const small = await sharp(await downloadImage(o.u)).rotate().resize(320, 320, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();
+      res.setHeader('Content-Type', 'image/webp');
+      res.setHeader('Cache-Control', 'public, max-age=604800, s-maxage=2592000, immutable');
+      return res.status(200).send(small);
+    }
     const s = await getSettingsSafe();
     const raw = await downloadImage(o.u);
     let out;
