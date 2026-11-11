@@ -108,7 +108,7 @@ export default async function handler(req, res) {
   }
   if (json && req.query?.part === 'sold') {
     try {
-      return res.status(200).json({ ok: true, ...(await soldItems()) });
+      return res.status(200).json({ ok: true, ...(await soldItems(String(req.query?.wh || 'shop'))) });
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
