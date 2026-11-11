@@ -5,6 +5,7 @@ import { hasRedis, once } from '../lib/store.js';
 import { ROLES, addUser, can, listUsers, removeUser, renewUser, roleOf, setUserRole } from '../lib/access.js';
 import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from '../lib/audit.js';
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
+import { whState, whSync } from '../lib/whstock.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
 import { igCarouselNow, igQueue, igQueueAction, igStats, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
 
@@ -108,6 +109,8 @@ export default async function handler(req, res) {
   }
   if (json && req.query?.part === 'sold') {
     try {
+      // per-warehouse table not read fully yet: read some more now (the tick reads the rest)
+      if (!(await whState().catch(() => ({}))).last_full_at) await whSync({ deadline: Date.now() + 20000 }).catch(() => null);
       return res.status(200).json({ ok: true, ...(await soldItems(String(req.query?.wh || 'shop'))) });
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
