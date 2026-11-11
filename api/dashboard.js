@@ -6,8 +6,7 @@ import { ROLES, TABS, addUser, can, canTab, listUsers, removeUser, renewUser, ro
 import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from '../lib/audit.js';
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { whState, whSync } from '../lib/whstock.js';
-import { sendWhMove } from '../lib/whmove.js';
-import { routeGroup } from '../lib/stock.js';
+import { startWhMove, whMoveSetCfg, whMoveView } from '../lib/whmove.js';
 import { getSettingsSafe } from '../lib/store.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
 import { igCarouselNow, igQueue, igQueueAction, igStats, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
@@ -68,7 +67,7 @@ export default async function handler(req, res) {
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a === 'wh_move_send' ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -78,12 +77,8 @@ export default async function handler(req, res) {
       if (action === 'user_remove') return res.status(200).json(await removeUser(body?.id));
       if (action === 'story_now') return res.status(200).json(await storyNow(body?.id));
       if (action === 'sold_prepare') return res.status(200).json(await soldPrepare(body?.pids));
-      if (action === 'wh_move_send') {
-        const chat = routeGroup(await getSettingsSafe(), 'report');
-        if (!chat) return res.status(200).json({ ok: false, message: "Ombor hisobot guruhi ulanmagan" });
-        const r = await sendWhMove(chat);
-        return res.status(200).json({ ok: true, message: `📨 Guruhga yuborildi: do'konda yo'q ${r.none} ta, kam qolgan ${r.low} ta` });
-      }
+      if (action === 'wh_move_send') return res.status(200).json(await startWhMove(await getSettingsSafe(), { deadline: Date.now() + 50000 }));
+      if (action === 'wh_move_cfg') return res.status(200).json(await whMoveSetCfg(body || {}));
       if (action === 'sold_delete') return res.status(200).json(await soldDelete(body?.token, body?.confirm));
       if (action === 'audit_group') return res.status(200).json(await auditSetGroup(body?.id || null));
       if (action === 'audit_toggle') return res.status(200).json(await auditToggle(String(body?.type || ''), Boolean(body?.on)));
@@ -112,7 +107,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -131,6 +126,13 @@ export default async function handler(req, res) {
       // per-warehouse table not read fully yet: read some more now (the tick reads the rest)
       if (!(await whState().catch(() => ({}))).last_full_at) await whSync({ deadline: Date.now() + 20000 }).catch(() => null);
       return res.status(200).json({ ok: true, ...(await soldItems(String(req.query?.wh || 'shop'))) });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'whmove') {
+    try {
+      return res.status(200).json(await whMoveView(await getSettingsSafe()));
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
