@@ -2,7 +2,7 @@ import { collectDashboard, dashboardKey, dashboardUrl } from '../lib/dashboard.j
 import { DASHBOARD_HTML, LOCKED_HTML, SENT_HTML } from '../lib/dashboard-page.js';
 import { notifyAdmins } from '../lib/report.js';
 import { hasRedis, once } from '../lib/store.js';
-import { ROLES, addUser, can, listUsers, removeUser, renewUser, roleOf, setUserRole } from '../lib/access.js';
+import { ROLES, TABS, addUser, can, canTab, listUsers, removeUser, renewUser, roleOf, setUserRole, setUserTabs } from '../lib/access.js';
 import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from '../lib/audit.js';
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { whState, whSync } from '../lib/whstock.js';
@@ -49,6 +49,7 @@ export default async function handler(req, res) {
     if (json || isPost) return res.status(401).json({ ok: false, error: 'Unauthorized', message: 'Havola eskirgan yoki o\'chirilgan' });
     return html(401, LOCKED_HTML);
   }
+  const denyTab = () => res.status(403).json({ ok: false, error: 'Forbidden', message: "Bu bo'limga ruxsatingiz yo'q" });
   const deny = () => res.status(403).json({ ok: false, error: 'Forbidden', message: "Sizda bu amal uchun huquq yo'q (faqat ko'rish)" });
   // POST actions: story_now (📋 Istoriya navbati), sold_prepare + sold_delete (❌ Tugaganlar, 2 steps)
   if (isPost) {
@@ -63,8 +64,12 @@ export default async function handler(req, res) {
     const action = req.query?.action;
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
+    const a = String(action || '');
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : null;
+    if (tab && !canTab(me, tab)) return denyTab();
     try {
-      if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role));
+      if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
+      if (action === 'user_tabs') return res.status(200).json(await setUserTabs(body?.id, body?.tabs));
       if (action === 'user_role') return res.status(200).json(await setUserRole(body?.id, body?.role));
       if (action === 'user_renew') return res.status(200).json(await renewUser(body?.id));
       if (action === 'user_remove') return res.status(200).json(await removeUser(body?.id));
@@ -94,11 +99,16 @@ export default async function handler(req, res) {
     }
   }
   if (json && req.query?.part === 'me') {
-    return res.status(200).json({ ok: true, role: me.role, name: me.name, role_title: ROLES[me.role] });
+    return res.status(200).json({ ok: true, role: me.role, name: me.name, role_title: ROLES[me.role], tabs: Object.keys(TABS).filter((t) => canTab(me, t)) });
+  }
+  if (json) {
+    const part = String(req.query?.part || '');
+    const tab = { '': 'report', story: 'story', sold: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig' }[part];
+    if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
     if (!can(me.role, 'admin')) return deny();
-    return res.status(200).json({ ok: true, users: await listUsers(), roles: ROLES });
+    return res.status(200).json({ ok: true, users: await listUsers(), roles: ROLES, tabs: TABS });
   }
   if (json && req.query?.part === 'audit') {
     try {
