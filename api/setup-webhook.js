@@ -1,4 +1,5 @@
 import { ADMIN_COMMANDS } from '../lib/admin.js';
+import { ensureShopMenuButton } from '../lib/waitlist.js';
 import { GROUP_COMMANDS } from '../lib/stock.js';
 import { getSettingsSafe } from '../lib/store.js';
 import { checkSecret } from '../lib/request.js';
@@ -50,6 +51,8 @@ export default async function handler(req, res) {
         commands.push({ group: settings.stock_group, ok: false, error: err.message });
       }
     }
+    // "🛍 Do'kon": the chat menu button opens the online shop as a Mini App
+    await ensureShopMenuButton(settings, { force: true }).catch((e) => commands.push({ menu_button: false, error: e.message }));
     const info = await tg('getWebhookInfo');
     return res.status(200).json({ ok: true, url, info, commands });
   } catch (err) {
