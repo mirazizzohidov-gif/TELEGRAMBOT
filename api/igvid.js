@@ -1,5 +1,5 @@
 // "🎬 Reels": the video Instagram downloads for a Reel (lib/ig.js igVideoUrl), also the dashboard's
-// "🎬 Namuna" preview. GET /api/igvid?d=<data>&s=<signature> -> MP4 (720x1280, 8 s, music).
+// "🎬 Namuna" preview. GET /api/igvid?d=<data>&s=<signature> -> MP4 (720x1280, 8-10 s, music, a random style).
 // Only links the bot signed work.
 import { createHash } from 'node:crypto';
 import { igCheck, igDecodeVideo, igMusicGet } from '../lib/ig.js';
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   // a sample video (drawn product, no data of the shop): checks that the server can make Reels
   if (req.query?.check === 'reel') {
     try {
-      const mp4 = await sampleReel();
+      const mp4 = await sampleReel(req.query?.st ? { st: String(req.query.st) } : null);
       res.setHeader('Content-Type', 'video/mp4');
       return res.status(200).send(mp4);
     } catch (e) {
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       const music = o.m ? await igMusicGet(o.m).catch(() => null) : null;
       mp4 = await buildReel(
         { name: o.n, price: o.p, old_price: o.o, image_url: o.u, kind: o.t },
-        { phone: o.ph, brand: o.b, price: o.sp !== false, music },
+        { phone: o.ph, brand: o.b, price: o.sp !== false, music, look: o.lk || null },
       );
       if (db.hasRedis()) await db.redis().set(key, mp4.toString('base64'), { ex: 3600 }).catch(() => {});
     }
