@@ -7,7 +7,7 @@ import { auditSetAlerts, auditSetGroup, auditTest, auditToggle, auditView } from
 import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { whState, whSync } from '../lib/whstock.js';
 import { startWhMove, whMoveSetCfg, whMoveView } from '../lib/whmove.js';
-import { ytClear, ytDisconnect, ytSetCfg, ytView } from '../lib/youtube.js';
+import { ytClear, ytDisconnect, ytRemoveKeys, ytSetCfg, ytSetKeys, ytView } from '../lib/youtube.js';
 import { getSettingsSafe } from '../lib/store.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
 import { igCarouselNow, igQueue, igQueueAction, igStats, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
       }
     }
     const action = req.query?.action;
-    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect';
+    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
     const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') || a.startsWith('yt_') ? 'ig' : null;
@@ -99,6 +99,8 @@ export default async function handler(req, res) {
       if (action === 'ig_stats') return res.status(200).json(await igStats(String(body?.slot || '')).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'yt_cfg') return res.status(200).json(await ytSetCfg(body || {}));
       if (action === 'yt_clear') return res.status(200).json(await ytClear());
+      if (action === 'yt_keys') return res.status(200).json(await ytSetKeys(body || {}));
+      if (action === 'yt_keys_del') return res.status(200).json(await ytRemoveKeys());
       if (action === 'yt_disconnect') return res.status(200).json(await ytDisconnect());
       if (action === 'ig_clear') return res.status(200).json(await igClearQueue(String(body?.slot || '')));
       return res.status(400).json({ ok: false, error: 'Unknown action' });
