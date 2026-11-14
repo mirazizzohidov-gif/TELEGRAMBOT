@@ -9,12 +9,13 @@ import { whState, whSync } from '../lib/whstock.js';
 import { startWhMove, whMoveSetCfg, whMoveView } from '../lib/whmove.js';
 import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from '../lib/facebook.js';
 import { socStats } from '../lib/socstats.js';
+import { weeklySendNow } from '../lib/weekly.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
 import { thClear, thDisconnect, thRemoveKeys, thSetCfg, thSetKeys, thView } from '../lib/threads.js';
 import { pinClear, pinDisconnect, pinRemoveKeys, pinSetCfg, pinSetKeys, pinView } from '../lib/pinterest.js';
 import { ttClear, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
 import { ytClear, ytDisconnect, ytRemoveKeys, ytSetCfg, ytSetKeys, ytView } from '../lib/youtube.js';
-import { getSettingsSafe } from '../lib/store.js';
+import { getSettingsSafe, updateSettings } from '../lib/store.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
 import { igCarouselNow, igQueue, igQueueAction, igStats, igCheckAccount, igClearQueue, igManual, igMusicAdd, igMusicDel, igPreview, igRemoveToken, igSearch, igSetCfg, igSetToken, igView } from '../lib/ig.js';
 
@@ -71,10 +72,10 @@ export default async function handler(req, res) {
       }
     }
     const action = req.query?.action;
-    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect';
+    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -108,6 +109,11 @@ export default async function handler(req, res) {
       if (action === 'fb_keys') return res.status(200).json(await fbSetKeys(body || {}));
       if (action === 'fb_keys_del') return res.status(200).json(await fbRemoveKeys());
       if (action === 'fb_disconnect') return res.status(200).json(await fbDisconnect());
+      if (action === 'stats_weekly_now') return res.status(200).json(await weeklySendNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'stats_weekly_cfg') {
+        await updateSettings({ weekly_social: Boolean(body?.on) });
+        return res.status(200).json({ ok: true, message: body?.on ? '✅ Har dushanba 10:00 da yuboriladi' : "⏸ Haftalik hisobot o'chirildi" });
+      }
       if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
       if (action === 'igdm_check') return res.status(200).json(await igdmCheck(String(body?.slot || 'a')).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'th_cfg') return res.status(200).json(await thSetCfg(body || {}));
