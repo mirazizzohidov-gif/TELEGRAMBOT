@@ -8,6 +8,8 @@ import { soldDelete, soldItems, soldPrepare } from '../lib/soldweb.js';
 import { whState, whSync } from '../lib/whstock.js';
 import { startWhMove, whMoveSetCfg, whMoveView } from '../lib/whmove.js';
 import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from '../lib/facebook.js';
+import { pinClear, pinDisconnect, pinRemoveKeys, pinSetCfg, pinSetKeys, pinView } from '../lib/pinterest.js';
+import { ttClear, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
 import { ytClear, ytDisconnect, ytRemoveKeys, ytSetCfg, ytSetKeys, ytView } from '../lib/youtube.js';
 import { getSettingsSafe } from '../lib/store.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
@@ -66,10 +68,10 @@ export default async function handler(req, res) {
       }
     }
     const action = req.query?.action;
-    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect';
+    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') || a.startsWith('yt_') || a.startsWith('fb_') ? 'ig' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -103,6 +105,16 @@ export default async function handler(req, res) {
       if (action === 'fb_keys') return res.status(200).json(await fbSetKeys(body || {}));
       if (action === 'fb_keys_del') return res.status(200).json(await fbRemoveKeys());
       if (action === 'fb_disconnect') return res.status(200).json(await fbDisconnect());
+      if (action === 'pin_cfg') return res.status(200).json(await pinSetCfg(body || {}));
+      if (action === 'pin_clear') return res.status(200).json(await pinClear());
+      if (action === 'pin_keys') return res.status(200).json(await pinSetKeys(body || {}));
+      if (action === 'pin_keys_del') return res.status(200).json(await pinRemoveKeys());
+      if (action === 'pin_disconnect') return res.status(200).json(await pinDisconnect());
+      if (action === 'tt_cfg') return res.status(200).json(await ttSetCfg(body || {}));
+      if (action === 'tt_clear') return res.status(200).json(await ttClear());
+      if (action === 'tt_keys') return res.status(200).json(await ttSetKeys(body || {}));
+      if (action === 'tt_keys_del') return res.status(200).json(await ttRemoveKeys());
+      if (action === 'tt_disconnect') return res.status(200).json(await ttDisconnect());
       if (action === 'yt_cfg') return res.status(200).json(await ytSetCfg(body || {}));
       if (action === 'yt_clear') return res.status(200).json(await ytClear());
       if (action === 'yt_keys') return res.status(200).json(await ytSetKeys(body || {}));
@@ -119,7 +131,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'ig', fb: 'ig' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -152,6 +164,20 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'fb') {
     try {
       return res.status(200).json(await fbView(await getSettingsSafe()));
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'pin') {
+    try {
+      return res.status(200).json(await pinView(await getSettingsSafe()));
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'tt') {
+    try {
+      return res.status(200).json(await ttView(await getSettingsSafe()));
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
