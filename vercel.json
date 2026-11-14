@@ -21,6 +21,9 @@
     "api/bito-orders.js": {
       "maxDuration": 300
     },
+    "api/igdm.js": {
+      "maxDuration": 300
+    },
     "api/dashboard.js": {
       "maxDuration": 120
     },
