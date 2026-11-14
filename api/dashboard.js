@@ -9,6 +9,7 @@ import { whState, whSync } from '../lib/whstock.js';
 import { startWhMove, whMoveSetCfg, whMoveView } from '../lib/whmove.js';
 import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from '../lib/facebook.js';
 import { socStats } from '../lib/socstats.js';
+import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
 import { thClear, thDisconnect, thRemoveKeys, thSetCfg, thSetKeys, thView } from '../lib/threads.js';
 import { pinClear, pinDisconnect, pinRemoveKeys, pinSetCfg, pinSetKeys, pinView } from '../lib/pinterest.js';
 import { ttClear, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
@@ -73,7 +74,7 @@ export default async function handler(req, res) {
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -107,6 +108,8 @@ export default async function handler(req, res) {
       if (action === 'fb_keys') return res.status(200).json(await fbSetKeys(body || {}));
       if (action === 'fb_keys_del') return res.status(200).json(await fbRemoveKeys());
       if (action === 'fb_disconnect') return res.status(200).json(await fbDisconnect());
+      if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
+      if (action === 'igdm_check') return res.status(200).json(await igdmCheck(String(body?.slot || 'a')).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'th_cfg') return res.status(200).json(await thSetCfg(body || {}));
       if (action === 'th_clear') return res.status(200).json(await thClear());
       if (action === 'th_keys') return res.status(200).json(await thSetKeys(body || {}));
@@ -138,7 +141,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', socstats: 'stats' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', socstats: 'stats' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -178,6 +181,13 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'socstats') {
     try {
       return res.status(200).json(await socStats({ refresh: req.query?.refresh === '1' }));
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'igdm') {
+    try {
+      return res.status(200).json(await igdmView(await getSettingsSafe()));
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
