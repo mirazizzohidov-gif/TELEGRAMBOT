@@ -2,6 +2,8 @@ import { kickBitoOrderLoop, pollBitoOrders } from '../../lib/bito-orders.js';
 import { checkCron } from '../../lib/request.js';
 import { hasRedis } from '../../lib/store.js';
 import { runTick } from '../../lib/tick.js';
+import { kickIgdmLoop } from '../../lib/igdm.js';
+import { getSettings } from '../../lib/store.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -25,7 +27,9 @@ export default async function handler(req, res) {
       console.error('bito order loop kick', err.message || err);
       return { error: err.message || String(err) };
     });
-    return res.status(200).json({ ok: true, ...result, bito_orders, bito_loop });
+    // "💬 Avto-javob": the Instagram Direct / comments minute-loop (lib/igdm.js) — restarted if it stopped
+    const igdm_loop = await kickIgdmLoop(await getSettings().catch(() => ({}))).catch((err) => ({ error: err.message || String(err) }));
+    return res.status(200).json({ ok: true, ...result, bito_orders, bito_loop, igdm_loop });
   } catch (err) {
     return res.status(err.status || 500).json({ ok: false, error: err.message, details: err.details });
   }
