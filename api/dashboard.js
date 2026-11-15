@@ -14,7 +14,7 @@ import { aiKeysView, loadAiKeys, setAiKeys } from '../lib/aikeys.js';
 import { bitoCheck, bitoSet, bitoView } from '../lib/chatbito.js';
 import { chatProfilesView, chatStats, chatSetCfg, chatSetProfile, chatView } from '../lib/chatai.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
-import { stockCfgSet, stockCfgView, warnListView } from '../lib/stockcfg.js';
+import { outBackfillRestart, stockCfgSet, stockCfgView, warnListView } from '../lib/stockcfg.js';
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
@@ -135,6 +135,7 @@ export default async function handler(req, res) {
       if (action === 'vpost_start') return res.status(200).json(await vpostStart(body || {}, await getSettingsSafe()));
       if (action === 'vpost_cancel') return res.status(200).json(await vpostCancel(body?.id));
       if (action === 'vpost_retry') return res.status(200).json(await vpostRetry(body?.id, String(body?.target || '')));
+      if (action === 'warn_outbf') return res.status(200).json(await outBackfillRestart());
       if (action === 'warn_stockcfg') return res.status(200).json(await stockCfgSet(body || {}));
       if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
       if (action === 'igdm_keys') return res.status(200).json(await setAiKeys(body || {}));
