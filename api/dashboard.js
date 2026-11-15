@@ -14,6 +14,7 @@ import { aiKeysView, loadAiKeys, setAiKeys } from '../lib/aikeys.js';
 import { bitoCheck, bitoSet, bitoView } from '../lib/chatbito.js';
 import { chatProfilesView, chatStats, chatSetCfg, chatSetProfile, chatView } from '../lib/chatai.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
+import { stockCfgSet, stockCfgView } from '../lib/stockcfg.js';
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
@@ -134,6 +135,7 @@ export default async function handler(req, res) {
       if (action === 'vpost_start') return res.status(200).json(await vpostStart(body || {}, await getSettingsSafe()));
       if (action === 'vpost_cancel') return res.status(200).json(await vpostCancel(body?.id));
       if (action === 'vpost_retry') return res.status(200).json(await vpostRetry(body?.id, String(body?.target || '')));
+      if (action === 'sold_stockcfg') return res.status(200).json(await stockCfgSet(body || {}));
       if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
       if (action === 'igdm_keys') return res.status(200).json(await setAiKeys(body || {}));
       if (action === 'igdm_bito') return res.status(200).json(await bitoSet(body || {}));
@@ -172,7 +174,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'sold', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -191,6 +193,13 @@ export default async function handler(req, res) {
       // per-warehouse table not read fully yet: read some more now (the tick reads the rest)
       if (!(await whState().catch(() => ({}))).last_full_at) await whSync({ deadline: Date.now() + 20000 }).catch(() => null);
       return res.status(200).json({ ok: true, ...(await soldItems(String(req.query?.wh || 'shop'))) });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'stockcfg') {
+    try {
+      return res.status(200).json(await stockCfgView(await getSettingsSafe()));
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
