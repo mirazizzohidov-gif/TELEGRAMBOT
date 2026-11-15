@@ -10,6 +10,7 @@ import { startWhMove, whMoveSetCfg, whMoveView } from '../lib/whmove.js';
 import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from '../lib/facebook.js';
 import { socStats } from '../lib/socstats.js';
 import { weeklySendNow } from '../lib/weekly.js';
+import { aiKeysView, loadAiKeys, setAiKeys } from '../lib/aikeys.js';
 import { chatSetCfg, chatView } from '../lib/chatai.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
@@ -133,6 +134,7 @@ export default async function handler(req, res) {
       if (action === 'vpost_cancel') return res.status(200).json(await vpostCancel(body?.id));
       if (action === 'vpost_retry') return res.status(200).json(await vpostRetry(body?.id, String(body?.target || '')));
       if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
+      if (action === 'igdm_keys') return res.status(200).json(await setAiKeys(body || {}));
       if (action === 'igdm_chat') return res.status(200).json(await chatSetCfg(body || {}));
       if (action === 'igdm_check') return res.status(200).json(await igdmCheck(String(body?.slot || 'a')).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'th_cfg') return res.status(200).json(await thSetCfg(body || {}));
@@ -234,7 +236,8 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'igdm') {
     try {
       const s = await getSettingsSafe();
-      return res.status(200).json({ ...(await igdmView(s)), chat: chatView(s) });
+      await loadAiKeys({ force: true }).catch(() => {});
+      return res.status(200).json({ ...(await igdmView(s)), chat: chatView(s), keys: await aiKeysView() });
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
