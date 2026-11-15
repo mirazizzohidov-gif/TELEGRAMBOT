@@ -11,6 +11,7 @@ import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from
 import { socStats } from '../lib/socstats.js';
 import { weeklySendNow } from '../lib/weekly.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
+import { vpostCancel, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { thClear, thDisconnect, thRemoveKeys, thSetCfg, thSetKeys, thView } from '../lib/threads.js';
 import { pinClear, pinDisconnect, pinRemoveKeys, pinSetCfg, pinSetKeys, pinView } from '../lib/pinterest.js';
 import { ttClear, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
@@ -75,7 +76,7 @@ export default async function handler(req, res) {
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -114,6 +115,9 @@ export default async function handler(req, res) {
         await updateSettings({ weekly_social: Boolean(body?.on) });
         return res.status(200).json({ ok: true, message: body?.on ? '✅ Har dushanba 10:00 da yuboriladi' : "⏸ Haftalik hisobot o'chirildi" });
       }
+      if (action === 'vpost_start') return res.status(200).json(await vpostStart(body || {}, await getSettingsSafe()));
+      if (action === 'vpost_cancel') return res.status(200).json(await vpostCancel(body?.id));
+      if (action === 'vpost_retry') return res.status(200).json(await vpostRetry(body?.id, String(body?.target || '')));
       if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
       if (action === 'igdm_check') return res.status(200).json(await igdmCheck(String(body?.slot || 'a')).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'th_cfg') return res.status(200).json(await thSetCfg(body || {}));
@@ -147,7 +151,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', socstats: 'stats' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', socstats: 'stats', vpost: 'vpost' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -187,6 +191,13 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'socstats') {
     try {
       return res.status(200).json(await socStats({ refresh: req.query?.refresh === '1' }));
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'vpost') {
+    try {
+      return res.status(200).json(await vpostView(await getSettingsSafe(), { nets: req.query?.nets !== '0' }));
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
