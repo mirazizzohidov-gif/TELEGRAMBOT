@@ -11,6 +11,7 @@ import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from
 import { socStats } from '../lib/socstats.js';
 import { weeklySendNow } from '../lib/weekly.js';
 import { aiKeysView, loadAiKeys, setAiKeys } from '../lib/aikeys.js';
+import { bitoCheck, bitoSet, bitoView } from '../lib/chatbito.js';
 import { chatProfilesView, chatSetCfg, chatSetProfile, chatView } from '../lib/chatai.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
@@ -135,6 +136,8 @@ export default async function handler(req, res) {
       if (action === 'vpost_retry') return res.status(200).json(await vpostRetry(body?.id, String(body?.target || '')));
       if (action === 'igdm_cfg') return res.status(200).json(await igdmSetCfg(body || {}));
       if (action === 'igdm_keys') return res.status(200).json(await setAiKeys(body || {}));
+      if (action === 'igdm_bito') return res.status(200).json(await bitoSet(body || {}));
+      if (action === 'igdm_bito_check') return res.status(200).json(await bitoCheck());
       if (action === 'igdm_prof') return res.status(200).json(await chatSetProfile(body || {}));
       if (action === 'igdm_chat') return res.status(200).json(await chatSetCfg(body || {}));
       if (action === 'igdm_check') return res.status(200).json(await igdmCheck(String(body?.slot || 'a')).catch((e) => ({ ok: false, message: e.message })));
@@ -238,7 +241,7 @@ export default async function handler(req, res) {
     try {
       const s = await getSettingsSafe();
       await loadAiKeys({ force: true }).catch(() => {});
-      return res.status(200).json({ ...(await igdmView(s)), chat: { ...chatView(s), profiles: await chatProfilesView(s) }, keys: await aiKeysView() });
+      return res.status(200).json({ ...(await igdmView(s)), chat: { ...chatView(s), profiles: await chatProfilesView(s) }, keys: await aiKeysView(), bito: await bitoView() });
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
