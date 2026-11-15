@@ -11,7 +11,12 @@ import { fbClear, fbDisconnect, fbRemoveKeys, fbSetCfg, fbSetKeys, fbView } from
 import { socStats } from '../lib/socstats.js';
 import { weeklySendNow } from '../lib/weekly.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
-import { vpostCancel, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
+import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
+import { socSales } from '../lib/socsales.js';
+import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
+import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
+import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
+import { channel2Owner } from '../lib/channel2.js';
 import { thClear, thDisconnect, thRemoveKeys, thSetCfg, thSetKeys, thView } from '../lib/threads.js';
 import { pinClear, pinDisconnect, pinRemoveKeys, pinSetCfg, pinSetKeys, pinView } from '../lib/pinterest.js';
 import { ttClear, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
@@ -73,10 +78,10 @@ export default async function handler(req, res) {
       }
     }
     const action = req.query?.action;
-    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now';
+    const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now' || String(action || '').startsWith('rival_') || action === 'rev_test';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -115,6 +120,14 @@ export default async function handler(req, res) {
         await updateSettings({ weekly_social: Boolean(body?.on) });
         return res.status(200).json({ ok: true, message: body?.on ? '✅ Har dushanba 10:00 da yuboriladi' : "⏸ Haftalik hisobot o'chirildi" });
       }
+      if (action === 'vpost_caption') return res.status(200).json(await vpostCaption(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'last_cfg') return res.status(200).json(await lastSetCfg(body || {}));
+      if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'rev_cfg') return res.status(200).json(await reviewsSetCfg(body || {}));
+      if (action === 'rev_test') return res.status(200).json(await reviewsTest(channel2Owner()).catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'rival_add') return res.status(200).json(await rivalsAdd(body || {}));
+      if (action === 'rival_del') return res.status(200).json(await rivalsDel(body?.id));
+      if (action === 'rival_check') return res.status(200).json(await rivalsCheck({ notify: true }).then((r) => ({ ok: true, message: `🔄 ${r.checked} ta havola tekshirildi${r.cheaper.length ? ` — ${r.cheaper.length} tasida arzonroq (Telegram'ga yuborildi)` : ' — hech kim arzon emas'}` })).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'vpost_start') return res.status(200).json(await vpostStart(body || {}, await getSettingsSafe()));
       if (action === 'vpost_cancel') return res.status(200).json(await vpostCancel(body?.id));
       if (action === 'vpost_retry') return res.status(200).json(await vpostRetry(body?.id, String(body?.target || '')));
@@ -151,7 +164,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', socstats: 'stats', vpost: 'vpost' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -191,6 +204,20 @@ export default async function handler(req, res) {
   if (json && req.query?.part === 'socstats') {
     try {
       return res.status(200).json(await socStats({ refresh: req.query?.refresh === '1' }));
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && ['socsales', 'lastunits', 'reviews', 'rivals'].includes(String(req.query?.part))) {
+    const part = String(req.query.part);
+    // sales sums and rival prices: the owner (admin) only
+    if ((part === 'socsales' || part === 'rivals') && !can(me.role, 'admin')) return deny();
+    try {
+      const s = await getSettingsSafe();
+      if (part === 'socsales') return res.status(200).json(await socSales({ days: Number(req.query?.days) || 7 }));
+      if (part === 'lastunits') return res.status(200).json(await lastView(s));
+      if (part === 'reviews') return res.status(200).json(await reviewsView(s));
+      return res.status(200).json(await rivalsView());
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
