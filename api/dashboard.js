@@ -12,7 +12,7 @@ import { socStats } from '../lib/socstats.js';
 import { weeklySendNow } from '../lib/weekly.js';
 import { aiKeysView, loadAiKeys, setAiKeys } from '../lib/aikeys.js';
 import { bitoCheck, bitoSet, bitoView } from '../lib/chatbito.js';
-import { chatProfilesView, chatSetCfg, chatSetProfile, chatView } from '../lib/chatai.js';
+import { chatProfilesView, chatStats, chatSetCfg, chatSetProfile, chatView } from '../lib/chatai.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
@@ -241,7 +241,7 @@ export default async function handler(req, res) {
     try {
       const s = await getSettingsSafe();
       await loadAiKeys({ force: true }).catch(() => {});
-      return res.status(200).json({ ...(await igdmView(s)), chat: { ...chatView(s), profiles: await chatProfilesView(s) }, keys: await aiKeysView(), bito: await bitoView() });
+      return res.status(200).json({ ...(await igdmView(s)), chat: { ...chatView(s), profiles: await chatProfilesView(s), stats: await chatStats() }, keys: await aiKeysView(), bito: await bitoView() });
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
