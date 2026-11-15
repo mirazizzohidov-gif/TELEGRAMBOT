@@ -3,6 +3,7 @@ import { checkCron } from '../../lib/request.js';
 import { hasRedis } from '../../lib/store.js';
 import { runTick } from '../../lib/tick.js';
 import { kickIgdmLoop } from '../../lib/igdm.js';
+import { kickStockBf } from '../../lib/stockbfloop.js';
 import { getSettings } from '../../lib/store.js';
 
 export default async function handler(req, res) {
@@ -29,7 +30,9 @@ export default async function handler(req, res) {
     });
     // "💬 Avto-javob": the Instagram Direct / comments minute-loop (lib/igdm.js) — restarted if it stopped
     const igdm_loop = await kickIgdmLoop(await getSettings().catch(() => ({}))).catch((err) => ({ error: err.message || String(err) }));
-    return res.status(200).json({ ok: true, ...result, bito_orders, bito_loop, igdm_loop });
+    // «Tugadi»/«Kam qoldi» qayta yuborish tsikli to'xtab qolgan bo'lsa, qayta yoqiladi
+    const stockbf = await kickStockBf().catch((err) => ({ error: err.message || String(err) }));
+    return res.status(200).json({ ok: true, ...result, bito_orders, bito_loop, igdm_loop, stockbf });
   } catch (err) {
     return res.status(err.status || 500).json({ ok: false, error: err.message, details: err.details });
   }

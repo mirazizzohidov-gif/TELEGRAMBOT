@@ -39,6 +39,9 @@
     },
     "api/vupload.js": {
       "maxDuration": 30
+    },
+    "api/stockbf.js": {
+      "maxDuration": 300
     }
   },
   "crons": [
