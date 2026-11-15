@@ -33,6 +33,12 @@
     "api/igvid.js": {
       "maxDuration": 120,
       "includeFiles": "{assets/fonts/**,node_modules/ffmpeg-static/ffmpeg}"
+    },
+    "api/vpost.js": {
+      "maxDuration": 300
+    },
+    "api/vupload.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
