@@ -3,7 +3,6 @@
 // Only links the bot signed work.
 import { createHash } from 'node:crypto';
 import { igCheck, igDecodeVideo, igMusicGet } from '../lib/ig.js';
-import * as db from '../lib/store.js';
 import { buildReel, ffmpegCheck, sampleReel } from '../lib/igvideo.js';
 import { errText } from '../lib/util.js';
 
@@ -28,17 +27,29 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
   try {
-    // made once and kept for an hour: the bot asks for it first (?warm=1), so Instagram gets it at once
-    const key = db.K.flag(`igvid:${createHash('sha1').update(d).digest('hex').slice(0, 20)}`);
-    const cached = db.hasRedis() ? await db.redis().get(key).catch(() => null) : null;
-    let mp4 = cached ? Buffer.from(String(cached), 'base64') : null;
+    // made once and kept for a day in Vercel Blob (not Redis: a few MB each filled the 30 MB database):
+    // the bot asks for it first (?warm=1), so Instagram, YouTube and TikTok get it at once
+    const path = `igvid/${createHash('sha1').update(d).digest('hex').slice(0, 20)}.mp4`;
+    const blob = process.env.BLOB_READ_WRITE_TOKEN ? await import('@vercel/blob').catch(() => null) : null;
+    let mp4 = null;
+    let cached = false;
+    if (blob) {
+      try {
+        const h = await blob.head(path);
+        const got = await fetch(h.url, { signal: AbortSignal.timeout(30000) });
+        if (got.ok) {
+          mp4 = Buffer.from(await got.arrayBuffer());
+          cached = true;
+        }
+      } catch {}
+    }
     if (!mp4) {
       const music = o.m ? await igMusicGet(o.m).catch(() => null) : null;
       mp4 = await buildReel(
         { name: o.n, price: o.p, old_price: o.o, image_url: o.u, kind: o.t },
         { phone: o.ph, brand: o.b, price: o.sp !== false, music, look: o.lk || null },
       );
-      if (db.hasRedis()) await db.redis().set(key, mp4.toString('base64'), { ex: 3600 }).catch(() => {});
+      if (blob) await blob.put(path, mp4, { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'video/mp4' }).catch((e) => console.error(`igvid blob: ${errText(e)}`));
     }
     if (req.query?.warm === '1') return res.status(200).json({ ok: true, bytes: mp4.length, cached: Boolean(cached) });
     res.setHeader('Content-Type', 'video/mp4');
