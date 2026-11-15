@@ -19,3 +19,12 @@ test('numbersAllowed accepts context numbers only', () => {
 test('time in default info is allowed', () => {
   assert.equal(numbersAllowed("9:00 dan ochiladi", "Ish vaqti: soat 9:00 dan ochiladi."), true);
 });
+
+test('phone formats and 09:00 vs 9:00 are equivalent', () => {
+  const ctx = 'Ish vaqti: 09:00 dan 21:00 gacha. Telefon: +998981270307. Manzil: Hamkor 30A';
+  assert.equal(numbersAllowed('Telefon: +998 98 127 03 07, soat 9:00 dan 21:00 gacha', ctx), true);
+  assert.equal(numbersAllowed('Telefon: +998 98 127 03 08', ctx), false);
+  assert.equal(numbersAllowed('Soat 10:00 da', ctx), false);
+  assert.equal(numbersAllowed('30A manzil', ctx), true);
+  assert.equal(numbersAllowed("Narxi 1 500 000 so'm", "Narxi: 1 500 000 so'm"), true);
+});
