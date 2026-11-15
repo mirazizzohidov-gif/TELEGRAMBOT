@@ -14,7 +14,7 @@ import { aiKeysView, loadAiKeys, setAiKeys } from '../lib/aikeys.js';
 import { bitoCheck, bitoSet, bitoView } from '../lib/chatbito.js';
 import { chatProfilesView, chatStats, chatSetCfg, chatSetProfile, chatView } from '../lib/chatai.js';
 import { igdmCheck, igdmSetCfg, igdmView } from '../lib/igdm.js';
-import { stockCfgSet, stockCfgView } from '../lib/stockcfg.js';
+import { stockCfgSet, stockCfgView, warnListView } from '../lib/stockcfg.js';
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
@@ -174,7 +174,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -193,6 +193,13 @@ export default async function handler(req, res) {
       // per-warehouse table not read fully yet: read some more now (the tick reads the rest)
       if (!(await whState().catch(() => ({}))).last_full_at) await whSync({ deadline: Date.now() + 20000 }).catch(() => null);
       return res.status(200).json({ ok: true, ...(await soldItems(String(req.query?.wh || 'shop'))) });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: err.message });
+    }
+  }
+  if (json && req.query?.part === 'warnlist') {
+    try {
+      return res.status(200).json(await warnListView(await getSettingsSafe()));
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
     }
