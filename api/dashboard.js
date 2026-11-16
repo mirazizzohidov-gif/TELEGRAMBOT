@@ -18,7 +18,7 @@ import { lowBackfillRestart, outBackfillRestart, reportNow, rescanNow, pauseBf, 
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
-import { mfSetCfg, mfView } from '../lib/feedback.js';
+import { mfSetCfg, mfTest, mfView } from '../lib/feedback.js';
 import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
 import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
 import { channel2Owner } from '../lib/channel2.js';
@@ -130,6 +130,7 @@ export default async function handler(req, res) {
       if (action === 'vpost_caption') return res.status(200).json(await vpostCaption(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'last_cfg') return res.status(200).json(await lastSetCfg(body || {}));
       if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'mf_test') return res.status(200).json(await mfTest(channel2Owner()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'mf_cfg') return res.status(200).json(await mfSetCfg(body || {}));
       if (action === 'rev_cfg') return res.status(200).json(await reviewsSetCfg(body || {}));
       if (action === 'rev_test') return res.status(200).json(await reviewsTest(channel2Owner()).catch((e) => ({ ok: false, message: e.message })));
