@@ -23,7 +23,7 @@ import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js'
 import { channel2Owner } from '../lib/channel2.js';
 import { thClear, thDisconnect, thRemoveKeys, thSetCfg, thSetKeys, thView } from '../lib/threads.js';
 import { pinClear, pinDisconnect, pinRemoveKeys, pinSetCfg, pinSetKeys, pinView } from '../lib/pinterest.js';
-import { ttClear, ttTryNow, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
+import { ttClear, ttComposer, ttPostManual, ttTryNow, ttDisconnect, ttRemoveKeys, ttSetCfg, ttSetKeys, ttView } from '../lib/tiktok.js';
 import { ytClear, ytDisconnect, ytRemoveKeys, ytSetCfg, ytSetKeys, ytView } from '../lib/youtube.js';
 import { getSettingsSafe, updateSettings } from '../lib/store.js';
 import { storyNow, storyQueueItems } from '../lib/storyweb.js';
@@ -162,6 +162,8 @@ export default async function handler(req, res) {
       if (action === 'pin_keys_del') return res.status(200).json(await pinRemoveKeys());
       if (action === 'pin_disconnect') return res.status(200).json(await pinDisconnect());
       if (action === 'tt_cfg') return res.status(200).json(await ttSetCfg(body || {}));
+      if (action === 'tt_composer') return res.status(200).json(await ttComposer(await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'tt_post') return res.status(200).json(await ttPostManual(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'tt_try') return res.status(200).json(await ttTryNow(await getSettingsSafe()));
       if (action === 'tt_clear') return res.status(200).json(await ttClear());
       if (action === 'tt_keys') return res.status(200).json(await ttSetKeys(body || {}));
