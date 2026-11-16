@@ -63,6 +63,8 @@ export default async function handler(req, res) {
   }
   const k = String(req.query?.k || '');
   const json = req.query?.format === 'json';
+  // kalit manzil satridan olib tashlangan (sahifa uni brauzerda saqlaydi): statik sahifa, ma'lumot kalit bilan so'raladi
+  if (!k && !json && !isPost && req.query?.app === '1') return html(200, DASHBOARD_HTML);
   // 👑 admin (owner link) · 🛠 manage · 👁 view (lib/access.js)
   const me = await roleOf(k).catch(() => null);
   if (!me) {
