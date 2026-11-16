@@ -18,6 +18,7 @@ import { lowBackfillRestart, outBackfillRestart, reportNow, rescanNow, pauseBf, 
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
+import { mfSetCfg, mfView } from '../lib/feedback.js';
 import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
 import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
 import { channel2Owner } from '../lib/channel2.js';
@@ -129,6 +130,7 @@ export default async function handler(req, res) {
       if (action === 'vpost_caption') return res.status(200).json(await vpostCaption(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'last_cfg') return res.status(200).json(await lastSetCfg(body || {}));
       if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'mf_cfg') return res.status(200).json(await mfSetCfg(body || {}));
       if (action === 'rev_cfg') return res.status(200).json(await reviewsSetCfg(body || {}));
       if (action === 'rev_test') return res.status(200).json(await reviewsTest(channel2Owner()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'rival_add') return res.status(200).json(await rivalsAdd(body || {}));
@@ -187,7 +189,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'stats' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -245,7 +247,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: err.message });
     }
   }
-  if (json && ['socsales', 'lastunits', 'reviews', 'rivals'].includes(String(req.query?.part))) {
+  if (json && ['socsales', 'lastunits', 'reviews', 'rivals', 'mfeedback'].includes(String(req.query?.part))) {
     const part = String(req.query.part);
     // sales sums and rival prices: the owner (admin) only
     if ((part === 'socsales' || part === 'rivals') && !can(me.role, 'admin')) return deny();
@@ -254,6 +256,7 @@ export default async function handler(req, res) {
       if (part === 'socsales') return res.status(200).json(await socSales({ days: Number(req.query?.days) || 7 }));
       if (part === 'lastunits') return res.status(200).json(await lastView(s));
       if (part === 'reviews') return res.status(200).json(await reviewsView(s));
+      if (part === 'mfeedback') return res.status(200).json(await mfView(s));
       return res.status(200).json(await rivalsView());
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
