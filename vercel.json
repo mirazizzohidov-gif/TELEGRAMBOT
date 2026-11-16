@@ -42,6 +42,10 @@
     },
     "api/stockbf.js": {
       "maxDuration": 300
+    },
+    "api/mfcard.js": {
+      "maxDuration": 30,
+      "includeFiles": "{assets/fonts/**}"
     }
   },
   "crons": [

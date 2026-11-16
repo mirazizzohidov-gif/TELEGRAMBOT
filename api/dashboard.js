@@ -18,7 +18,7 @@ import { lowBackfillRestart, outBackfillRestart, reportNow, rescanNow, pauseBf, 
 import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '../lib/vpost.js';
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
-import { mfSetCfg, mfTest, mfView } from '../lib/feedback.js';
+import { mfCardSend, mfCfg, mfSetCfg, mfTest, mfView } from '../lib/feedback.js';
 import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
 import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
 import { channel2Owner } from '../lib/channel2.js';
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now' || String(action || '').startsWith('rival_') || action === 'rev_test';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('warn_') ? 'warn' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('warn_') ? 'warn' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : a.startsWith('mf_') ? 'mfb' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -130,6 +130,7 @@ export default async function handler(req, res) {
       if (action === 'vpost_caption') return res.status(200).json(await vpostCaption(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'last_cfg') return res.status(200).json(await lastSetCfg(body || {}));
       if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'mf_card') { const st = await getSettingsSafe(); return res.status(200).json(await mfCardSend(String(body?.id || ''), st, mfCfg(st)).catch((e) => ({ ok: false, message: e.message }))); }
       if (action === 'mf_test') return res.status(200).json(await mfTest(channel2Owner()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'mf_cfg') return res.status(200).json(await mfSetCfg(body || {}));
       if (action === 'rev_cfg') return res.status(200).json(await reviewsSetCfg(body || {}));
@@ -190,7 +191,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'stats' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'mfb' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
