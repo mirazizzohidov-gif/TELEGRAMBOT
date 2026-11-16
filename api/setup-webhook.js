@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     await tg('setWebhook', {
       url,
       secret_token: webhookSecretToken(),
-      allowed_updates: ['message', 'callback_query', 'business_connection', 'business_message', 'my_chat_member'],
+      allowed_updates: ['message', 'callback_query', 'business_connection', 'business_message', 'my_chat_member', 'chat_member'],
     });
     const commands = await setupAdminCommands();
     // Stock group commands (/tugagan, /kam, /bugun, /sku) in the selected group.
