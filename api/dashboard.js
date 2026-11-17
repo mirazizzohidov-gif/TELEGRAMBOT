@@ -19,6 +19,7 @@ import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '..
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
 import { blPost, blSetCfg, blView } from '../lib/backlog.js';
+import { boAckFromDash, boSetCfg, boTest, boView } from '../lib/bito-orders.js';
 import { mfCardSend, mfCfg, mfSetCfg, mfTest, mfView } from '../lib/feedback.js';
 import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
 import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
@@ -89,7 +90,7 @@ export default async function handler(req, res) {
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now' || String(action || '').startsWith('rival_') || action === 'rev_test';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('warn_') ? 'warn' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : a.startsWith('mf_') ? 'mfb' : a.startsWith('bl_') ? 'back' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('warn_') ? 'warn' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : a.startsWith('mf_') ? 'mfb' : a.startsWith('bl_') ? 'back' : a.startsWith('bo_') ? 'border' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -131,6 +132,9 @@ export default async function handler(req, res) {
       if (action === 'vpost_caption') return res.status(200).json(await vpostCaption(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'last_cfg') return res.status(200).json(await lastSetCfg(body || {}));
       if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'bo_cfg') return res.status(200).json(await boSetCfg(body || {}));
+      if (action === 'bo_test') return res.status(200).json(await boTest(await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'bo_ack') return res.status(200).json(await boAckFromDash(String(body?.key || '')));
       if (action === 'bl_cfg') return res.status(200).json(await blSetCfg(body || {}));
       if (action === 'bl_post') return res.status(200).json(await blPost(String(body?.pid || ''), await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'mf_card') { const st = await getSettingsSafe(); return res.status(200).json(await mfCardSend(String(body?.id || ''), st, mfCfg(st)).catch((e) => ({ ok: false, message: e.message }))); }
@@ -194,7 +198,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'mfb', backlog: 'back' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'mfb', backlog: 'back', border: 'border' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -252,7 +256,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: err.message });
     }
   }
-  if (json && ['socsales', 'lastunits', 'reviews', 'rivals', 'mfeedback', 'backlog'].includes(String(req.query?.part))) {
+  if (json && ['socsales', 'lastunits', 'reviews', 'rivals', 'mfeedback', 'backlog', 'border'].includes(String(req.query?.part))) {
     const part = String(req.query.part);
     // sales sums and rival prices: the owner (admin) only
     if ((part === 'socsales' || part === 'rivals') && !can(me.role, 'admin')) return deny();
@@ -263,6 +267,7 @@ export default async function handler(req, res) {
       if (part === 'reviews') return res.status(200).json(await reviewsView(s));
       if (part === 'mfeedback') return res.status(200).json(await mfView(s));
       if (part === 'backlog') return res.status(200).json(await blView(s));
+      if (part === 'border') return res.status(200).json(await boView(s));
       return res.status(200).json(await rivalsView());
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });
