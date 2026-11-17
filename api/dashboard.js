@@ -19,7 +19,7 @@ import { vpostCancel, vpostCaption, vpostRetry, vpostStart, vpostView } from '..
 import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
 import { blPost, blSetCfg, blView } from '../lib/backlog.js';
-import { boAckFromDash, boSetCfg, boTest, boView } from '../lib/bito-orders.js';
+import { boAckFromDash, boPoTest, boSetCfg, boTest, boView } from '../lib/bito-orders.js';
 import { mfCardSend, mfCfg, mfSetCfg, mfTest, mfView } from '../lib/feedback.js';
 import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
 import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
@@ -134,6 +134,7 @@ export default async function handler(req, res) {
       if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
       if (action === 'bo_cfg') return res.status(200).json(await boSetCfg(body || {}));
       if (action === 'bo_test') return res.status(200).json(await boTest(await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'bo_potest') return res.status(200).json(await boPoTest(await getSettingsSafe()));
       if (action === 'bo_ack') return res.status(200).json(await boAckFromDash(String(body?.key || '')));
       if (action === 'bl_cfg') return res.status(200).json(await blSetCfg(body || {}));
       if (action === 'bl_post') return res.status(200).json(await blPost(String(body?.pid || ''), await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
