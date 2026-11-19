@@ -46,6 +46,9 @@
     "api/mfcard.js": {
       "maxDuration": 30,
       "includeFiles": "{assets/fonts/**}"
+    },
+    "api/ytrun.js": {
+      "maxDuration": 300
     }
   },
   "crons": [
