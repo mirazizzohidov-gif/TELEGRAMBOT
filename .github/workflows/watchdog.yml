@@ -11,4 +11,4 @@ jobs:
     timeout-minutes: 7
     steps:
       - name: Ping the bot
-        run: curl -sS -m 320 https://telegrambot-cic8.vercel.app/api/cron/watchdog || true
+        run: curl -sS -m 320 https://188-245-91-98.sslip.io/api/cron/watchdog || true
