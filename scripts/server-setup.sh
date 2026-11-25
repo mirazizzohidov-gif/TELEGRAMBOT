@@ -81,7 +81,7 @@ cat > /etc/caddy/Caddyfile <<CADDY
 $HOST {
   encode gzip
   request_body {
-    max_size 60MB
+    max_size 520MB
   }
   reverse_proxy 127.0.0.1:3000 {
     transport http {

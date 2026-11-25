@@ -3,6 +3,7 @@
 //   node server.js            (PORT=3000 default, .env o'qiladi)
 //   CRON_ON=1 bo'lsa: har 15 daqiqada /api/cron/tick, har kuni 11:00 UTC /api/cron/daily
 import { createServer, request as httpRequest } from 'node:http';
+import { createReadStream } from 'node:fs';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname, dirname, normalize } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -33,7 +34,7 @@ const MAX_BODY = 60 * 1024 * 1024;
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webp': 'image/webp', '.mp4': 'video/mp4',
+  '.jpeg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webp': 'image/webp', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.m4v': 'video/x-m4v', '.webm': 'video/webm',
 };
 
 const handlers = new Map();
@@ -110,7 +111,7 @@ function addHelpers(res) {
 
 function serveStatic(path, res) {
   const rel = path === '/' ? 'index.html' : decodeURIComponent(path).replace(/^\/+/, '');
-  if (rel.split('/').some((p) => p.startsWith('.') || ['node_modules', 'lib', 'api', 'test', 'scripts'].includes(p))) return false;
+  if (rel.split('/').some((p) => p.startsWith('.') || ['node_modules', 'lib', 'api', 'test', 'scripts', 'data'].includes(p))) return false;
   for (const [base, any] of [[join(ROOT, 'public'), true], [ROOT, false]]) {
     const file = normalize(join(base, rel));
     if (!file.startsWith(base + '/') || !existsSync(file) || !statSync(file).isFile()) continue;
@@ -124,6 +125,36 @@ function serveStatic(path, res) {
   return false;
 }
 
+// /media/<yo'l>: data/media dagi fayllar (videolar), Range qo'llab-quvvatlanadi
+const MEDIA_DIR = process.env.MEDIA_DIR || join(ROOT, 'data', 'media');
+function serveMedia(req, res, rel) {
+  const file = normalize(join(MEDIA_DIR, rel));
+  if (!file.startsWith(MEDIA_DIR + '/') || !existsSync(file) || !statSync(file).isFile()) return res.status(404).send('Not found');
+  const size = statSync(file).size;
+  res.setHeader('content-type', TYPES[extname(file).toLowerCase()] || 'application/octet-stream');
+  res.setHeader('accept-ranges', 'bytes');
+  res.setHeader('cache-control', 'public, max-age=3600');
+  const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  let start = 0;
+  let end = size - 1;
+  if (m && (m[1] || m[2])) {
+    if (m[1]) {
+      start = Number(m[1]);
+      if (m[2]) end = Math.min(Number(m[2]), size - 1);
+    } else start = Math.max(0, size - Number(m[2]));
+    if (start > end || start >= size) {
+      res.statusCode = 416;
+      res.setHeader('content-range', `bytes */${size}`);
+      return res.end();
+    }
+    res.statusCode = 206;
+    res.setHeader('content-range', `bytes ${start}-${end}/${size}`);
+  } else res.statusCode = 200;
+  res.setHeader('content-length', String(end - start + 1));
+  if (req.method === 'HEAD') return res.end();
+  createReadStream(file, { start, end }).pipe(res);
+}
+
 const server = createServer(async (req, res) => {
   addHelpers(res);
   const url = new URL(req.url, 'http://localhost');
@@ -133,10 +164,12 @@ const server = createServer(async (req, res) => {
       const fn = await loadHandler(m[1]);
       if (!fn) return res.status(404).json({ ok: false, error: 'Not found' });
       req.query = Object.fromEntries(url.searchParams);
-      if (!['GET', 'HEAD'].includes(req.method)) req.body = parseBody(await readRaw(req), req.headers['content-type'] || '');
+      // PUT (video yuklash) — handler o'zi oqim sifatida diskka yozadi
+      if (!['GET', 'HEAD', 'PUT'].includes(req.method)) req.body = parseBody(await readRaw(req), req.headers['content-type'] || '');
       await fn(req, res);
       return;
     }
+    if (url.pathname.startsWith('/media/')) return serveMedia(req, res, decodeURIComponent(url.pathname.slice(7)));
     if (url.pathname === '/health') return res.status(200).json({ ok: true, up: Math.round(process.uptime()) });
     if (serveStatic(url.pathname, res)) return;
     res.status(404).send('Not found');

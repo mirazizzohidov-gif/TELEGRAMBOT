@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { igCheck, igDecodeVideo, igMusicGet } from '../lib/ig.js';
 import { buildReel, ffmpegCheck, sampleReel } from '../lib/igvideo.js';
 import { errText } from '../lib/util.js';
+import { putMedia, readMedia, selfHosted } from '../lib/media.js';
 
 export default async function handler(req, res) {
   if (req.query?.check === '1') return res.status(200).json(await ffmpegCheck());
@@ -30,9 +31,10 @@ export default async function handler(req, res) {
     // made once and kept for a day in Vercel Blob (not Redis: a few MB each filled the 30 MB database):
     // the bot asks for it first (?warm=1), so Instagram, YouTube and TikTok get it at once
     const path = `igvid/${createHash('sha1').update(d).digest('hex').slice(0, 20)}.mp4`;
-    const blob = process.env.BLOB_READ_WRITE_TOKEN ? await import('@vercel/blob').catch(() => null) : null;
-    let mp4 = null;
-    let cached = false;
+    const local = selfHosted();
+    const blob = !local && process.env.BLOB_READ_WRITE_TOKEN ? await import('@vercel/blob').catch(() => null) : null;
+    let mp4 = local ? readMedia(path) : null;
+    let cached = Boolean(mp4);
     if (blob) {
       try {
         const h = await blob.head(path);
@@ -49,6 +51,13 @@ export default async function handler(req, res) {
         { name: o.n, price: o.p, old_price: o.o, image_url: o.u, kind: o.t },
         { phone: o.ph, brand: o.b, price: o.sp !== false, music, look: o.lk || null },
       );
+      if (local) {
+        try {
+          putMedia(path, mp4);
+        } catch (e) {
+          console.error(`igvid media: ${errText(e)}`);
+        }
+      }
       if (blob) await blob.put(path, mp4, { access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'video/mp4' }).catch((e) => console.error(`igvid blob: ${errText(e)}`));
     }
     if (req.query?.warm === '1') return res.status(200).json({ ok: true, bytes: mp4.length, cached: Boolean(cached) });
