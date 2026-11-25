@@ -9,7 +9,7 @@ HOST="${HOST:-${IP//./-}.sslip.io}"
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y curl git ca-certificates gnupg ufw debian-keyring debian-archive-keyring apt-transport-https
+apt-get install -y curl git ca-certificates gnupg ufw fontconfig fonts-dejavu-core debian-keyring debian-archive-keyring apt-transport-https
 
 # swap 2 GB (video paytida xotira yetmay qolmasin)
 if ! swapon --show | grep -q /swapfile; then

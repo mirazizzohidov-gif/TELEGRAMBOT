@@ -2,7 +2,7 @@
 // va Vercel cron / cron-job.org o'rniga ichki taymerlarni ishga tushiradi.
 //   node server.js            (PORT=3000 default, .env o'qiladi)
 //   CRON_ON=1 bo'lsa: har 15 daqiqada /api/cron/tick, har kuni 11:00 UTC /api/cron/daily
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, extname, dirname, normalize } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -152,14 +152,24 @@ server.keepAliveTimeout = 65000;
 server.listen(PORT, '127.0.0.1', () => console.log(`server: http://127.0.0.1:${PORT} (host ${process.env.PUBLIC_HOST || '-'})`));
 
 // Ichki taymerlar (Vercel cron / cron-job.org o'rniga). Faqat CRON_ON=1 bo'lsa.
-async function callCron(path) {
+// node:http (fetch emas): fetch 300 soniyadan uzoq tick'da "fetch failed" (headers timeout) berardi
+function callCron(path) {
   const headers = process.env.CRON_SECRET ? { authorization: `Bearer ${process.env.CRON_SECRET}` } : { 'x-secret': process.env.SECRET || '' };
-  try {
-    const r = await fetch(`http://127.0.0.1:${PORT}${path}`, { headers, signal: AbortSignal.timeout(330000) });
-    console.log(`cron ${path}: ${r.status}`);
-  } catch (e) {
-    console.error(`cron ${path}: ${e.message || e}`);
-  }
+  const started = Date.now();
+  return new Promise((resolve) => {
+    const req = httpRequest({ host: '127.0.0.1', port: PORT, path, headers, timeout: 0 }, (res) => {
+      res.resume();
+      res.on('end', () => {
+        console.log(`cron ${path}: ${res.statusCode} (${Math.round((Date.now() - started) / 1000)}s)`);
+        resolve();
+      });
+    });
+    req.on('error', (e) => {
+      console.error(`cron ${path}: ${e.message || e}`);
+      resolve();
+    });
+    req.end();
+  });
 }
 if (process.env.CRON_ON === '1') {
   let tickBusy = false;
