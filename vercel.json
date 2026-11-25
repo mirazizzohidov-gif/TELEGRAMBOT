@@ -51,11 +51,5 @@
       "maxDuration": 300
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/daily",
-      "schedule": "0 11 * * *"
-    }
-  ],
   "installCommand": "npm install --no-audit --no-fund && node node_modules/ffmpeg-static/install.js"
 }
