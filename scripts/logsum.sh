@@ -13,5 +13,6 @@ grep -iE "error|xato|fail|timeout|uncaught|unhandled|invalid|expired|denied|forb
 echo "== JOYLANGANLAR:"
 grep -iE "posted|uploaded|story ok|story -> .*: ok|published|sent story|yt:|ig .* ok|tt:|reel" <<<"$L" | grep -viE "error|fail" \
   | sed -E 's/[0-9a-f]{24}/ID/g; s/[0-9]+/N/g' | cut -c1-90 | sort | uniq -c | sort -rn | head -20
+echo "== REDIS: $(grep -q '^REDIS_URL="redis://127.0.0.1' /opt/mixbot/.env && echo server || echo TASHQI) · kalitlar $(redis-cli dbsize 2>/dev/null) · xotira $(redis-cli info memory 2>/dev/null | grep -m1 used_memory_human | cut -d: -f2 | tr -d '\r')"
 echo "== RESURS:"
 free -m | head -2; df -h / | tail -1; uptime
