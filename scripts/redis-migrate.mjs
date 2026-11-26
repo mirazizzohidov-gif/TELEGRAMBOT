@@ -83,42 +83,56 @@ console.log(`Manba: ${srcName} → ${DST_URL}`);
 const stat = {};
 let n = 0;
 let fail = 0;
+async function copyKey(k) {
+  try {
+    const [t0, ttl0] = await Promise.all([src.type(k), src.pttl(k)]);
+    const t = String(t0);
+    const ttl = Number(ttl0);
+    if (t === 'none' || ttl === -2) return;
+    const str = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
+    let write;
+    if (t === 'string') {
+      const v = await src.get(k);
+      if (v === null || v === undefined) return;
+      write = (m) => m.set(k, str(v));
+    } else if (t === 'hash') {
+      const h = await src.hgetall(k);
+      const flat = Object.fromEntries(Object.entries(h).map(([f, v]) => [f, str(v)]));
+      if (!Object.keys(flat).length) return;
+      write = (m) => m.hSet(k, flat);
+    } else if (t === 'list') {
+      const l = (await src.lrange(k)).map(str);
+      if (!l.length) return;
+      write = (m) => m.rPush(k, l);
+    } else if (t === 'set') {
+      const s = (await src.smembers(k)).map(str);
+      if (!s.length) return;
+      write = (m) => m.sAdd(k, s);
+    } else if (t === 'zset') {
+      const z = await src.zrange(k);
+      if (!z.length) return;
+      write = (m) => m.zAdd(k, z.map((x) => ({ value: String(x.value), score: Number(x.score) })));
+    } else return;
+    const m = dst.multi().del(k);
+    write(m);
+    if (ttl > 0) m.pExpire(k, ttl);
+    await m.exec();
+    stat[t] = (stat[t] || 0) + 1;
+    n++;
+  } catch (e) {
+    fail++;
+    if (fail <= 5) console.error(`xato: ${e.message}`);
+  }
+}
+
+// parallel: 100 ta kalit bir vaqtda (tarmoq kechikishi sababli ketma-ket juda sekin)
+const POOL = 100;
+let lastLog = 0;
 for await (const batch of src.keys()) {
-  for (const k of batch) {
-    try {
-      const t = String(await src.type(k));
-      const ttl = Number(await src.pttl(k));
-      if (t === 'none' || ttl === -2) continue;
-      await dst.del(k);
-      if (t === 'string') {
-        const v = await src.get(k);
-        if (v === null || v === undefined) continue;
-        await dst.set(k, typeof v === 'string' ? v : JSON.stringify(v));
-      } else if (t === 'hash') {
-        const h = await src.hgetall(k);
-        const flat = Object.fromEntries(Object.entries(h).map(([f, v]) => [f, typeof v === 'string' ? v : JSON.stringify(v)]));
-        if (Object.keys(flat).length) await dst.hSet(k, flat);
-      } else if (t === 'list') {
-        const l = (await src.lrange(k)).map((v) => (typeof v === 'string' ? v : JSON.stringify(v)));
-        if (l.length) await dst.rPush(k, l);
-      } else if (t === 'set') {
-        const s = (await src.smembers(k)).map((v) => (typeof v === 'string' ? v : JSON.stringify(v)));
-        if (s.length) await dst.sAdd(k, s);
-      } else if (t === 'zset') {
-        const z = await src.zrange(k);
-        if (z.length) await dst.zAdd(k, z.map((x) => ({ value: String(x.value), score: Number(x.score) })));
-      } else {
-        console.log(`o'tkazildi (turi ${t}): 1 kalit`);
-        continue;
-      }
-      if (ttl > 0) await dst.pExpire(k, ttl);
-      stat[t] = (stat[t] || 0) + 1;
-      n++;
-      if (n % 500 === 0) console.log(`  ${n} ta kalit...`);
-    } catch (e) {
-      fail++;
-      if (fail <= 5) console.error(`xato: ${e.message}`);
-    }
+  for (let i = 0; i < batch.length; i += POOL) await Promise.all(batch.slice(i, i + POOL).map(copyKey));
+  if (n - lastLog >= 2000) {
+    lastLog = n;
+    console.log(`  ${n} ta kalit...`);
   }
 }
 await src.close();
