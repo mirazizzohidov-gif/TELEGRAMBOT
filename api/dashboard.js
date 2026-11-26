@@ -20,6 +20,7 @@ import { socSales } from '../lib/socsales.js';
 import { lastNow, lastSetCfg, lastView } from '../lib/lastunits.js';
 import { blPost, blSetCfg, blView } from '../lib/backlog.js';
 import { boAckFromDash, boPoTest, boSetCfg, boTest, boView } from '../lib/bito-orders.js';
+import { srvBackupNow, srvSetCfg, srvView } from '../lib/srvops.js';
 import { mfCardSend, mfCfg, mfSetCfg, mfTest, mfView } from '../lib/feedback.js';
 import { reviewsSetCfg, reviewsTest, reviewsView } from '../lib/reviews.js';
 import { rivalsAdd, rivalsCheck, rivalsDel, rivalsView } from '../lib/rivals.js';
@@ -90,7 +91,7 @@ export default async function handler(req, res) {
     const adminOnly = String(action || '').startsWith('user_') || action === 'ig_token' || action === 'ig_remove' || action === 'yt_disconnect' || action === 'yt_keys' || action === 'yt_keys_del' || action === 'fb_keys' || action === 'fb_keys_del' || action === 'fb_disconnect' || action === 'tt_keys' || action === 'tt_keys_del' || action === 'tt_disconnect' || action === 'pin_keys' || action === 'pin_keys_del' || action === 'pin_disconnect' || action === 'th_keys' || action === 'th_keys_del' || action === 'th_disconnect' || action === 'stats_weekly_now' || String(action || '').startsWith('rival_') || action === 'rev_test';
     if (!can(me.role, adminOnly ? 'admin' : 'manage')) return deny();
     const a = String(action || '');
-    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('warn_') ? 'warn' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : a.startsWith('mf_') ? 'mfb' : a.startsWith('bl_') ? 'back' : a.startsWith('bo_') ? 'border' : null;
+    const tab = a === 'story_now' ? 'story' : a.startsWith('sold_') || a.startsWith('wh_move') ? 'sold' : a.startsWith('audit_') ? 'audit' : a.startsWith('ig_') ? 'ig' : a.startsWith('yt_') ? 'yt' : a.startsWith('fb_') ? 'fb' : a.startsWith('tt_') ? 'tt' : a.startsWith('pin_') ? 'pin' : a.startsWith('th_') ? 'th' : a.startsWith('warn_') ? 'warn' : a.startsWith('igdm_') ? 'igdm' : a.startsWith('stats_') ? 'stats' : a.startsWith('vpost_') ? 'vpost' : a.startsWith('last_') ? 'story' : a.startsWith('rev_') || a.startsWith('rival_') ? 'stats' : a.startsWith('mf_') ? 'mfb' : a.startsWith('bl_') ? 'back' : a.startsWith('bo_') ? 'border' : a.startsWith('srv_') ? 'srv' : null;
     if (tab && !canTab(me, tab)) return denyTab();
     try {
       if (action === 'user_add') return res.status(200).json(await addUser(body?.name, body?.role, body?.tabs));
@@ -132,6 +133,11 @@ export default async function handler(req, res) {
       if (action === 'vpost_caption') return res.status(200).json(await vpostCaption(body || {}, await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'last_cfg') return res.status(200).json(await lastSetCfg(body || {}));
       if (action === 'last_now') return res.status(200).json(await lastNow().catch((e) => ({ ok: false, message: e.message })));
+      if (action === 'srv_cfg' || action === 'srv_backup') {
+        if (!can(me.role, 'admin')) return deny();
+        if (action === 'srv_cfg') return res.status(200).json(await srvSetCfg(body || {}));
+        return res.status(200).json(await srvBackupNow().catch((e) => ({ ok: false, message: e.message })));
+      }
       if (action === 'bo_cfg') return res.status(200).json(await boSetCfg(body || {}));
       if (action === 'bo_test') return res.status(200).json(await boTest(await getSettingsSafe()).catch((e) => ({ ok: false, message: e.message })));
       if (action === 'bo_potest') return res.status(200).json(await boPoTest(await getSettingsSafe()));
@@ -199,7 +205,7 @@ export default async function handler(req, res) {
   }
   if (json) {
     const part = String(req.query?.part || '');
-    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'mfb', backlog: 'back', border: 'border' }[part];
+    const tab = { '': 'report', story: 'story', sold: 'sold', whmove: 'sold', audit: 'audit', ig: 'ig', igqueue: 'ig', yt: 'yt', fb: 'fb', tt: 'tt', pin: 'pin', th: 'th', igdm: 'igdm', stockcfg: 'warn', warnlist: 'warn', socstats: 'stats', vpost: 'vpost', socsales: 'stats', lastunits: 'story', reviews: 'stats', rivals: 'stats', mfeedback: 'mfb', backlog: 'back', border: 'border', srv: 'srv' }[part];
     if (tab && !canTab(me, tab)) return denyTab();
   }
   if (json && req.query?.part === 'users') {
@@ -257,10 +263,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: err.message });
     }
   }
-  if (json && ['socsales', 'lastunits', 'reviews', 'rivals', 'mfeedback', 'backlog', 'border'].includes(String(req.query?.part))) {
+  if (json && ['socsales', 'lastunits', 'reviews', 'rivals', 'mfeedback', 'backlog', 'border', 'srv'].includes(String(req.query?.part))) {
     const part = String(req.query.part);
     // sales sums and rival prices: the owner (admin) only
-    if ((part === 'socsales' || part === 'rivals') && !can(me.role, 'admin')) return deny();
+    if ((part === 'socsales' || part === 'rivals' || part === 'srv') && !can(me.role, 'admin')) return deny();
     try {
       const s = await getSettingsSafe();
       if (part === 'socsales') return res.status(200).json(await socSales({ days: Number(req.query?.days) || 7 }));
@@ -269,6 +275,7 @@ export default async function handler(req, res) {
       if (part === 'mfeedback') return res.status(200).json(await mfView(s));
       if (part === 'backlog') return res.status(200).json(await blView(s));
       if (part === 'border') return res.status(200).json(await boView(s));
+      if (part === 'srv') return res.status(200).json(await srvView(s));
       return res.status(200).json(await rivalsView());
     } catch (err) {
       return res.status(500).json({ ok: false, error: err.message });

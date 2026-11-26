@@ -227,7 +227,18 @@ if (process.env.CRON_ON === '1') {
       callCron('/api/cron/daily');
     }
   }, 20000);
-  console.log('cron: ichki taymerlar yoqildi (tick 15 daqiqa, daily 11:00 UTC)');
+  // 🛡 Server: holat nazorati va kundalik baza zaxirasi (lib/srvops.js) — har 5 daqiqada
+  const srv = async () => {
+    try {
+      const { srvTick } = await import('./lib/srvops.js');
+      await srvTick();
+    } catch (e) {
+      console.error(`srv: ${e.message || e}`);
+    }
+  };
+  setTimeout(srv, 60000);
+  setInterval(srv, 5 * 60000);
+  console.log('cron: ichki taymerlar yoqildi (tick 15 daqiqa, daily 11:00 UTC, srv 5 daqiqa)');
 }
 
 process.on('unhandledRejection', (e) => console.error('unhandledRejection', e));
