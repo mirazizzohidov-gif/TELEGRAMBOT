@@ -51,5 +51,8 @@
       "maxDuration": 300
     }
   },
-  "installCommand": "npm install --no-audit --no-fund && node node_modules/ffmpeg-static/install.js"
+  "installCommand": "npm install --no-audit --no-fund && node node_modules/ffmpeg-static/install.js",
+  "git": {
+    "deploymentEnabled": false
+  }
 }
